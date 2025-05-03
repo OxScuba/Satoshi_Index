@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/styled_price"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:text="0.00 001 456 ₿"
+    android:textSize="16sp"
+    android:textColor="#000000" />
