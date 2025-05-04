@@ -52,8 +52,6 @@ Voici la liste complète des produits actuellement disponibles dans l’applicat
 
 ## 📸 Aperçu visuel
 
- ![001](lib/assets/images/001.png)
-
  ![002](lib/assets/images/002.png) 
  
  ![003](lib/assets/images/003.png) 
@@ -81,3 +79,39 @@ git clone https://github.com/votre-utilisateur/satoshi-index.git
 cd satoshi-index
 flutter pub get
 flutter run
+
+
+
+## 🔐 Sources et licences
+
+- **INSEE** : [insee.fr/statistiques](https://www.insee.fr/fr/statistiques)
+- **CoinGecko API** : [coingecko.com](https://www.coingecko.com/)
+- **Whitepaper Bitcoin** : [bitcoin.org/bitcoin.pdf](https://bitcoin.org/bitcoin.pdf)
+
+---
+
+## 👨‍💻 Contribuer
+
+Les contributions sont les bienvenues !  
+Voici quelques pistes pour participer :
+
+- ✅ Ajout de nouveaux produits  
+- 🌍 Intégration de sources internationales  
+- 🎨 Optimisation graphique ou technique  
+- 📱 Widgets Android natifs *(en cours de développement)*
+
+---
+
+## 📄 Licence
+
+Ce projet est sous **licence MIT**.  
+Vous êtes libres de le modifier, le distribuer et le réutiliser dans vos projets.
+
+---
+
+## 🧡 Soutien
+
+Vous aimez ce projet ? Vous pouvez soutenir son développement avec un don en **Bitcoin** :
+
+**Scuba_Wizard@getalby.com**  
+*(scan via QR code dans l’application)*
