@@ -80,7 +80,8 @@ cd satoshi-index
 flutter pub get
 flutter run
 
-
+```
+---
 
 ## 🔐 Sources et licences
 
