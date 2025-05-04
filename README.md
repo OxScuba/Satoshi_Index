@@ -4,7 +4,7 @@
 
 ---
 
-| ![001](lib/assets/images/001.png)|
+ ![001](lib/assets/images/001.png)
 
 ## 📲 Fonctionnalités principales
 
@@ -52,13 +52,11 @@ Voici la liste complète des produits actuellement disponibles dans l’applicat
 
 ## 📸 Aperçu visuel
 
-| Logo | Accueil | Détail produit |
-|------|---------|----------------|
-| ![001](lib/assets/images/001.png)|
+ ![001](lib/assets/images/001.png)
 
-| Graphiques | Tableau & Source | Satoshi & Tip |
-|-----------|------------------|----------------|
-| ![002](lib/assets/images/002.png) | ![003](lib/assets/images/003.png) | 
+ ![002](lib/assets/images/002.png) 
+ 
+ ![003](lib/assets/images/003.png) 
 
 ---
 
