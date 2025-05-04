@@ -7,7 +7,7 @@ class LogoPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Logo Satoshi Index'),
+        title: const Text('Satoshi Index'),
         backgroundColor: Colors.orange,
       ),
       body: SingleChildScrollView(
