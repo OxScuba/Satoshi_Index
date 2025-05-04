@@ -60,7 +60,7 @@ Voici la liste complète des produits actuellement disponibles dans l’applicat
 
 ## 📦 Fichier APK disponible
 
-Un **fichier APK prêt à l’emploi** est disponible dans la section **[Releases](https://github.com/votre-utilisateur/satoshi-index/releases)** du dépôt. Il vous suffit de le télécharger et de l’installer sur n’importe quel appareil Android.
+Un **fichier APK prêt à l’emploi** est disponible dans la section **[Releases](https://github.com/OxScuba/Satoshi_Index/tree/main/apk)** du dépôt. Il vous suffit de le télécharger et de l’installer sur n’importe quel appareil Android.
 
 ---
 
@@ -75,7 +75,7 @@ Un **fichier APK prêt à l’emploi** est disponible dans la section **[Release
 ### Étapes
 
 ```bash
-git clone https://github.com/votre-utilisateur/satoshi-index.git
+git clone https://github.com/OxScuba/Satoshi_Index.git
 cd satoshi-index
 flutter pub get
 flutter run
