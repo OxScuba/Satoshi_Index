@@ -115,4 +115,4 @@ Vous êtes libres de le modifier, le distribuer et le réutiliser dans vos proje
 Vous aimez ce projet ? Vous pouvez soutenir son développement avec un don en **Bitcoin** :
 
 **Scuba_Wizard@getalby.com**  
-![donation](lib/assets/images/donation_qr.png)
+![logo](lib/assets/images/donation_qr.png)
