@@ -8,6 +8,7 @@ import 'pages/logo_page.dart';
 import 'pages/satoshi_page.dart';
 import 'pages/bullbitcoin_page.dart';
 import 'pages/settings_page.dart';
+import 'pages/trading_chart_page.dart';
 import 'services/bitcoin_service.dart';
 import 'services/product_export_service.dart';
 
@@ -179,7 +180,14 @@ class _HomePageState extends State<HomePage> {
             ),
             if (bitcoinPriceEUR != null)
               GestureDetector(
-                onTap: fetchBitcoinPrice,
+                onTap: () async {
+                  await fetchBitcoinPrice();
+                  if (!mounted) return;
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const TradingChartPage()),
+                  );
+                },
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
