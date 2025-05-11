@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../models/product.dart';
 import '../models/price_entry.dart';
 import '../services/bitcoin_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/gestures.dart';
 
 class ProductDetailPage extends StatefulWidget {
@@ -18,33 +19,39 @@ class ProductDetailPage extends StatefulWidget {
 
 class _ProductDetailPageState extends State<ProductDetailPage> {
   double? bitcoinPriceEUR;
+  bool showSats = false;
 
   @override
   void initState() {
     super.initState();
     fetchBitcoinPrice();
+    loadSettings();
   }
 
   Future<void> fetchBitcoinPrice() async {
     final price = await BitcoinService.fetchBitcoinPriceEUR();
-    setState(() {
-      bitcoinPriceEUR = price;
-    });
+    setState(() => bitcoinPriceEUR = price);
+  }
+
+  Future<void> loadSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() => showSats = prefs.getBool('showSats') ?? false);
   }
 
   @override
   Widget build(BuildContext context) {
     final product = widget.product;
     final entries = product.data.where((e) => e.priceSats != null).toList();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final euroPrices = entries.map((e) => e.priceEuro).toList();
     final priceBTC =
         entries.map((e) => e.priceEuro / (e.btcPrice ?? 1)).toList();
     final logPriceBTC = priceBTC.map((p) => log(p) / ln10).toList();
 
-    final double minYEuro = euroPrices.reduce(min) * 0.8;
-    final double maxYEuro = euroPrices.reduce(max) * 1.2;
-    final double minYBTC = logPriceBTC.reduce(min) - 0.2;
-    final double maxYBTC = logPriceBTC.reduce(max) + 0.2;
+    final minYEuro = euroPrices.reduce(min) * 0.8;
+    final maxYEuro = euroPrices.reduce(max) * 1.2;
+    final minYBTC = logPriceBTC.reduce(min) - 0.2;
+    final maxYBTC = logPriceBTC.reduce(max) + 0.2;
 
     final euroSpots =
         entries
@@ -59,6 +66,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
           final price = e.priceEuro / btc;
           return FlSpot(_quarterToDouble(e.year, e.quarter), log(price) / ln10);
         }).toList();
+
     return Scaffold(
       appBar: AppBar(
         title: Row(
@@ -76,7 +84,10 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                   const SizedBox(width: 6),
                   Text(
                     "= ${bitcoinPriceEUR!.toStringAsFixed(2).replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+\.)'), (m) => "${m[1]} ")} €",
-                    style: const TextStyle(fontSize: 14, color: Colors.black),
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: isDark ? Colors.white : Colors.black,
+                    ),
                   ),
                 ],
               ),
@@ -99,7 +110,10 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                 padding: const EdgeInsets.only(bottom: 16),
                 child: RichText(
                   text: TextSpan(
-                    style: const TextStyle(color: Colors.black, fontSize: 13),
+                    style: TextStyle(
+                      color: isDark ? Colors.white : Colors.black,
+                      fontSize: 13,
+                    ),
                     children: [
                       const TextSpan(
                         text:
@@ -146,7 +160,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
             const SizedBox(height: 8),
-            _buildTable(entries),
+            _buildTable(entries, isDark),
           ],
         ),
       ),
@@ -243,7 +257,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     );
   }
 
-  Widget _buildTable(List<PriceEntry> entries) {
+  Widget _buildTable(List<PriceEntry> entries, bool isDark) {
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 600),
@@ -268,72 +282,141 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
               entries.reversed.map((e) {
                 final btcPrice = e.btcPrice ?? 0;
                 final priceBTC = btcPrice > 0 ? e.priceEuro / btcPrice : 0;
-                final str = priceBTC.toStringAsFixed(8);
-                final parts = str.split('.');
-                final before = parts[0];
-                final after = parts[1];
-                final grouped =
-                    "$before.${after.substring(0, 2)} ${after.substring(2, 5)} ${after.substring(5)}";
-                final plain = "$before.$after";
-                final firstSigIndex = plain.indexOf(RegExp(r'[1-9]'));
-                int spaceOffset = 0;
-                for (int i = 0; i < grouped.length - 2; i++) {
-                  if (grouped[i] == ' ') spaceOffset++;
-                  if (grouped[i] == plain[firstSigIndex]) break;
-                }
-                final boldStart = firstSigIndex + spaceOffset;
+                final sats = (priceBTC * 100000000).round();
 
-                return DataRow(
-                  cells: [
-                    DataCell(
-                      Text(
-                        "T${e.quarter} ${e.year}",
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                    ),
-                    DataCell(
-                      Text(
-                        "${e.priceEuro.toStringAsFixed(2)} €",
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                    ),
-                    DataCell(
-                      Text(
-                        "${btcPrice.toStringAsFixed(2).replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+\.)'), (m) => "${m[1]} ")} €",
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                    ),
-                    DataCell(
-                      RichText(
-                        text: TextSpan(
-                          text: grouped.substring(0, boldStart),
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Colors.black,
-                          ),
-                          children: [
-                            TextSpan(
-                              text: grouped.substring(boldStart),
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.orange,
-                                fontSize: 12,
-                              ),
-                            ),
-                            const TextSpan(
-                              text: " ₿",
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.orange,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
+                if (showSats) {
+                  final raw = sats.toString();
+                  final formatted = raw.replaceAllMapped(
+                    RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
+                    (m) => '${m[1]} ',
+                  );
+                  final firstSig = raw.indexOf(RegExp(r'[1-9]'));
+                  int offset = 0;
+                  for (
+                    int i = 0;
+                    i < formatted.length && i < formatted.length - 2;
+                    i++
+                  ) {
+                    if (formatted[i] == ' ') offset++;
+                    if (formatted[i] == raw[firstSig]) break;
+                  }
+                  final boldStart = firstSig + offset;
+
+                  return DataRow(
+                    cells: [
+                      DataCell(
+                        Text(
+                          "T${e.quarter} ${e.year}",
+                          style: const TextStyle(fontSize: 12),
                         ),
                       ),
-                    ),
-                  ],
-                );
+                      DataCell(
+                        Text(
+                          "${e.priceEuro.toStringAsFixed(2)} €",
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      ),
+                      DataCell(
+                        Text(
+                          "${btcPrice.toStringAsFixed(2)} €",
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      ),
+                      DataCell(
+                        RichText(
+                          text: TextSpan(
+                            text: formatted.substring(0, boldStart),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: isDark ? Colors.white : Colors.black,
+                            ),
+                            children: [
+                              TextSpan(
+                                text: formatted.substring(boldStart),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.orange,
+                                ),
+                              ),
+                              const TextSpan(
+                                text: " sats",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.orange,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                } else {
+                  final str = priceBTC.toStringAsFixed(8);
+                  final parts = str.split('.');
+                  final before = parts[0];
+                  final after = parts[1];
+                  final grouped =
+                      "$before.${after.substring(0, 2)} ${after.substring(2, 5)} ${after.substring(5)}";
+                  final plain = "$before.$after";
+                  final sig = plain.indexOf(RegExp(r'[1-9]'));
+                  int offset = 0;
+                  for (int i = 0; i < grouped.length - 2; i++) {
+                    if (grouped[i] == ' ') offset++;
+                    if (grouped[i] == plain[sig]) break;
+                  }
+                  final boldStart = sig + offset;
+
+                  return DataRow(
+                    cells: [
+                      DataCell(
+                        Text(
+                          "T${e.quarter} ${e.year}",
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      ),
+                      DataCell(
+                        Text(
+                          "${e.priceEuro.toStringAsFixed(2)} €",
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      ),
+                      DataCell(
+                        Text(
+                          "${btcPrice.toStringAsFixed(2)} €",
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      ),
+                      DataCell(
+                        RichText(
+                          text: TextSpan(
+                            text: grouped.substring(0, boldStart),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: isDark ? Colors.white : Colors.black,
+                            ),
+                            children: [
+                              TextSpan(
+                                text: grouped.substring(boldStart),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.orange,
+                                ),
+                              ),
+                              const TextSpan(
+                                text: " ₿",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.orange,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                }
               }).toList(),
         ),
       ),

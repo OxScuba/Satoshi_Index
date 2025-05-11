@@ -47,6 +47,8 @@ dependencies:
   flutter_pdfview: ^1.2.5
 
   syncfusion_flutter_pdfviewer: ^29.1.40
+
+  shared_preferences: ^2.2.2
   
 
 dev_dependencies:
@@ -87,6 +89,7 @@ flutter:
     - lib/assets/images/Bitcoin_to_satoshi.png
     - lib/assets/pdf/LivreBlanc_Verticale_31x21po_Blanc.pdf
     - lib/assets/images/logo_bullbitcoin.png
+    - lib/assets/images/logo_bullbitcoin_2.png
     - lib/assets/images/tuto_bullbitcoin_par_howtobitcoin.png
   # To add assets to your application, add an assets section, like this:
   # assets:

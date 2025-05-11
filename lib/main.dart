@@ -1,39 +1,83 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'models/product.dart';
 import 'pages/product_detail_page.dart';
 import 'pages/donation_page.dart';
 import 'pages/logo_page.dart';
 import 'pages/satoshi_page.dart';
 import 'pages/bullbitcoin_page.dart';
+import 'pages/settings_page.dart';
 import 'services/bitcoin_service.dart';
 import 'services/product_export_service.dart';
 
-void main() {
-  runApp(SatoshiIndexApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final prefs = await SharedPreferences.getInstance();
+  final isDarkMode = prefs.getBool('darkMode') ?? false;
+  runApp(SatoshiIndexApp(isDarkMode: isDarkMode));
 }
 
-class SatoshiIndexApp extends StatelessWidget {
+class SatoshiIndexApp extends StatefulWidget {
+  final bool isDarkMode;
+
+  const SatoshiIndexApp({super.key, required this.isDarkMode});
+
+  @override
+  State<SatoshiIndexApp> createState() => _SatoshiIndexAppState();
+}
+
+class _SatoshiIndexAppState extends State<SatoshiIndexApp> {
+  late bool isDarkMode;
+
+  @override
+  void initState() {
+    super.initState();
+    isDarkMode = widget.isDarkMode;
+  }
+
+  void updateTheme(bool darkMode) {
+    setState(() {
+      isDarkMode = darkMode;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Satoshi Index',
+      themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
       theme: ThemeData(
         primarySwatch: Colors.orange,
         scaffoldBackgroundColor: Colors.white,
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
+        ),
       ),
-      home: HomePage(),
+      darkTheme: ThemeData.dark(),
+      home: HomePage(isDarkMode: isDarkMode, onThemeChanged: updateTheme),
     );
   }
 }
 
 class HomePage extends StatefulWidget {
+  final bool isDarkMode;
+  final Function(bool) onThemeChanged;
+
+  const HomePage({
+    super.key,
+    required this.isDarkMode,
+    required this.onThemeChanged,
+  });
+
   @override
   State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
   double? bitcoinPriceEUR;
+  bool showSats = false;
   Timer? _timer;
 
   final List<Product> products = [
@@ -50,9 +94,17 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    _loadSettings();
     fetchBitcoinPrice();
     _timer = Timer.periodic(const Duration(minutes: 2), (timer) {
       fetchBitcoinPrice();
+    });
+  }
+
+  Future<void> _loadSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      showSats = prefs.getBool('showSats') ?? false;
     });
   }
 
@@ -67,20 +119,36 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       bitcoinPriceEUR = price;
     });
-
     await ProductExportService.exportProducts(products, price);
   }
 
   @override
   Widget build(BuildContext context) {
+    final isDark = widget.isDarkMode;
+    final textColor = isDark ? Colors.white : Colors.black;
+
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: isDark ? Colors.black : Colors.white,
         elevation: 1,
         automaticallyImplyLeading: false,
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
+            IconButton(
+              icon: const Icon(Icons.settings, color: Colors.orange),
+              onPressed: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder:
+                        (_) =>
+                            SettingsPage(onThemeChanged: widget.onThemeChanged),
+                  ),
+                );
+                await _loadSettings();
+              },
+            ),
             Expanded(
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -122,8 +190,8 @@ class _HomePageState extends State<HomePage> {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      "= ${bitcoinPriceEUR!.toStringAsFixed(2).replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+\.)'), (match) => "${match[1]} ")} €",
-                      style: const TextStyle(fontSize: 14, color: Colors.black),
+                      "= ${bitcoinPriceEUR!.toStringAsFixed(2).replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+\.)'), (match) => '${match[1]} ')} €",
+                      style: TextStyle(fontSize: 14, color: textColor),
                     ),
                   ],
                 ),
@@ -148,7 +216,10 @@ class _HomePageState extends State<HomePage> {
                               ((latestEntry.priceEuro / bitcoinPriceEUR!) *
                                       100000000)
                                   .round();
-                          final formattedSats = formatSatsDisplay(sats);
+                          final formatted =
+                              showSats
+                                  ? formatSatsOnly(sats)
+                                  : formatSatsDisplay(sats, isDark);
 
                           return Card(
                             shape: RoundedRectangleBorder(
@@ -160,7 +231,7 @@ class _HomePageState extends State<HomePage> {
                                 item.emoji,
                                 style: const TextStyle(fontSize: 28),
                               ),
-                              title: formattedSats,
+                              title: formatted,
                               subtitle: Text(
                                 "${latestEntry.priceEuro.toStringAsFixed(2)} €",
                               ),
@@ -182,97 +253,21 @@ class _HomePageState extends State<HomePage> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const DonationPage(),
-                                ),
-                              );
-                            },
-                            icon: const Icon(
-                              Icons.favorite,
-                              color: Colors.white,
-                            ),
-                            label: const Text("Tip me"),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.orange,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 12,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(30),
-                              ),
-                              textStyle: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
+                        _buildNavButton(
+                          Icons.favorite,
+                          "Tip me",
+                          const DonationPage(),
                         ),
                         const SizedBox(width: 8),
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const BullBitcoinPage(),
-                                ),
-                              );
-                            },
-                            icon: const Icon(
-                              Icons.shopping_cart,
-                              color: Colors.white,
-                            ),
-                            label: const Text("Buy Bitcoin"),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.orange,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 12,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(30),
-                              ),
-                              textStyle: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
+                        _buildImageNavButton(
+                          'lib/assets/images/logo_bullbitcoin_2.png',
+                          const BullBitcoinPage(),
                         ),
                         const SizedBox(width: 8),
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const SatoshiPage(),
-                                ),
-                              );
-                            },
-                            icon: const Icon(
-                              Icons.currency_bitcoin,
-                              color: Colors.white,
-                            ),
-                            label: const Text("Sat ⇄ BTC"),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.orange,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 12,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(30),
-                              ),
-                              textStyle: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
+                        _buildNavButton(
+                          Icons.currency_bitcoin,
+                          "Sat ⇄ BTC",
+                          const SatoshiPage(),
                         ),
                       ],
                     ),
@@ -282,12 +277,72 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget formatSatsDisplay(int sats) {
+  Widget _buildNavButton(IconData icon, String label, Widget page) {
+    return Expanded(
+      child: ElevatedButton.icon(
+        onPressed: () {
+          Navigator.push(context, MaterialPageRoute(builder: (_) => page));
+        },
+        icon: Icon(icon, color: Colors.white),
+        label: Text(label),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.orange,
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(30),
+          ),
+          textStyle: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImageNavButton(String imagePath, Widget page) {
+    return Expanded(
+      child: InkWell(
+        onTap: () {
+          Navigator.push(context, MaterialPageRoute(builder: (_) => page));
+        },
+        child: Image.asset(imagePath, height: 40, fit: BoxFit.contain),
+      ),
+    );
+  }
+
+  Widget formatSatsOnly(int sats) {
+    final formatted = sats.toString().replaceAllMapped(
+      RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
+      (m) => '${m[1]} ',
+    );
+    return RichText(
+      text: TextSpan(
+        text: '',
+        style: const TextStyle(fontSize: 18, color: Colors.black),
+        children: [
+          TextSpan(
+            text: formatted,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.orange,
+            ),
+          ),
+          const TextSpan(
+            text: " sats",
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+              color: Colors.orange,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget formatSatsDisplay(int sats, bool isDark) {
     final str = (sats / 100000000).toStringAsFixed(8);
     final parts = str.split('.');
     final beforeDecimal = parts[0];
     final afterDecimal = parts[1];
-
     final grouped =
         "$beforeDecimal.${afterDecimal.substring(0, 2)} ${afterDecimal.substring(2, 5)} ${afterDecimal.substring(5)}";
     final plain = "$beforeDecimal.$afterDecimal";
@@ -303,7 +358,10 @@ class _HomePageState extends State<HomePage> {
     return RichText(
       text: TextSpan(
         text: grouped.substring(0, boldStart),
-        style: const TextStyle(fontSize: 18, color: Colors.black),
+        style: TextStyle(
+          fontSize: 18,
+          color: isDark ? Colors.white : Colors.black,
+        ),
         children: [
           TextSpan(
             text: grouped.substring(boldStart),
