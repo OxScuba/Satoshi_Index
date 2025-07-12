@@ -366,4 +366,11 @@ final List<PriceEntry> pizzaPriceData = [
     btcPrice: 70000.00,
     priceSats: 1942.86,
   ),
+  PriceEntry(
+    year: 2025,
+    quarter: 2,
+    priceEuro: 13.60,
+    btcPrice: 92025.00,
+    priceSats: 14778.59,
+  ),
 ];

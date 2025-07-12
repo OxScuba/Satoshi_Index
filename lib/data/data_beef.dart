@@ -372,4 +372,11 @@ final List<PriceEntry> beefPriceData = [
     btcPrice: 70000.00,
     priceSats: 39885.71,
   ),
+  PriceEntry(
+    year: 2025,
+    quarter: 2,
+    priceEuro: 28.29,
+    btcPrice: 92025.00,
+    priceSats: 30741.64,
+  ),
 ];
