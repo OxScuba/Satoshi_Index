@@ -67,6 +67,9 @@ Voici la liste complète des produits actuellement disponibles dans l’applicat
 
 ![002](lib/assets/images/002.png)  
 ![003](lib/assets/images/003.png) 
+![004](lib/assets/images/004.png) 
+![005](lib/assets/images/005.png) 
+![006](lib/assets/images/006.png) 
 
 ---
 
