@@ -1,0 +1,12 @@
+Satoshi Index lets you track the evolution of everyday product prices in both euros (€) and bitcoins (₿), displayed in satoshis.
+A new way to understand inflation and purchasing power over time, with:
+
+- Live bitcoin price updated automatically (CoinGecko)
+- Interactive charts for each product (baguette, coffee, gasoline, real estate, etc.)
+- Detailed historical tables with quarterly prices
+- Educational display for satoshi to bitcoin conversion
+- Bitcoin donation page (QR code)
+- Official sources (INSEE, CoinGecko)
+- Dark mode and customizable display settings
+
+Open-source application – download the APK or contribute freely on GitHub!

@@ -1,0 +1,7 @@
+v1.0.0
+- First public release.
+- Display of historical prices in euros and satoshis.
+- Interactive charts and detailed data table.
+- Automatic update of the bitcoin price (CoinGecko).
+- Bitcoin donation page.
+- Dark mode.

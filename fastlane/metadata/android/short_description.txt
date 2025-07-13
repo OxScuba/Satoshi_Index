@@ -1,0 +1,1 @@
+Track daily product prices in euros and satoshis.
