@@ -3,12 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'models/product.dart';
 import 'pages/product_detail_page.dart';
-import 'pages/donation_page.dart';
 import 'pages/logo_page.dart';
 import 'pages/satoshi_page.dart';
 import 'pages/bullbitcoin_page.dart';
 import 'pages/settings_page.dart';
 import 'pages/trading_chart_page.dart';
+import 'pages/outils_page.dart';
 import 'services/bitcoin_service.dart';
 import 'services/product_export_service.dart';
 
@@ -262,9 +262,13 @@ class _HomePageState extends State<HomePage> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         _buildNavButton(
-                          Icons.favorite,
-                          "Tip me",
-                          const DonationPage(),
+                          Icons.build,
+                          "Outils",
+                          OutilsPage(
+                            products: products,
+                            bitcoinPriceEUR: bitcoinPriceEUR!,
+                            isDark: isDark,
+                          ),
                         ),
                         const SizedBox(width: 8),
                         _buildImageNavButton(

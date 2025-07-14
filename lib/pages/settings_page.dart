@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'donation_page.dart';
 
 class SettingsPage extends StatefulWidget {
   final Function(bool) onThemeChanged;
@@ -84,6 +85,17 @@ class _SettingsPageState extends State<SettingsPage> {
                 }
               },
             ),
+          ),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.favorite, color: Colors.orange),
+            title: const Text('Tip me in Bitcoin'),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const DonationPage()),
+              );
+            },
           ),
         ],
       ),

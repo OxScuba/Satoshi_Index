@@ -1,8 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'whitepaper_page.dart';
 
 class SatoshiPage extends StatelessWidget {
   const SatoshiPage({super.key});
+
+  void _launchPlanB() async {
+    final url = Uri.parse('https://planb.network');
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,19 +42,24 @@ class SatoshiPage extends StatelessWidget {
               style: TextStyle(fontSize: 16),
               textAlign: TextAlign.center,
             ),
-            /*
             const SizedBox(height: 16),
+            Image.asset(
+              'lib/assets/images/Bitcoin_to_satoshi.png',
+              fit: BoxFit.contain,
+              height: 300,
+            ),
+            const SizedBox(height: 18),
             const Text(
-              "🔸 1 satoshi = 0.00 000 001 BTC\n"
-              "🔸 100 000 000 satoshis = 1 BTC",
-              style: TextStyle(fontSize: 16),
+              "Pour apprendre sur la meilleure plateforme d'éducation gratuite sur Bitcoin c'est sur planb.network",
               textAlign: TextAlign.center,
-            ),*/
-            const SizedBox(height: 16),
-            Expanded(
+              style: TextStyle(fontSize: 15, color: Colors.black87),
+            ),
+            const SizedBox(height: 8),
+            InkWell(
+              onTap: _launchPlanB,
               child: Image.asset(
-                'lib/assets/images/Bitcoin_to_satoshi.png',
-                fit: BoxFit.contain,
+                'lib/assets/images/planb_network_logo.png',
+                height: 56,
               ),
             ),
             const SizedBox(height: 16),
