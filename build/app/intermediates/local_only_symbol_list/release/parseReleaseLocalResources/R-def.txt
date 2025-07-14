@@ -1,0 +1,14 @@
+R_DEF: Internal format may change without notice
+local
+drawable launch_background
+drawable widget_background
+id styled_price
+id widget_baguette_emoji
+id widget_baguette_price_container
+id widget_baguette_root
+layout widget_baguette
+layout widget_price_container
+mipmap ic_launcher
+style LaunchTheme
+style NormalTheme
+xml baguette_widget_info

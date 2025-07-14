@@ -1,0 +1,1 @@
+/home/scuba/Documents/Satoshi_Index/build/app/intermediates/cxx/RelWithDebInfo/3c1h4i58/obj/x86_64

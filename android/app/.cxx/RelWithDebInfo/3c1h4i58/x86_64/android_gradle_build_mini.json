@@ -1,0 +1,20 @@
+{
+  "buildFiles": [
+    "/home/scuba/snap/flutter/common/flutter/packages/flutter_tools/gradle/src/main/groovy/CMakeLists.txt"
+  ],
+  "cleanCommandsComponents": [
+    [
+      "/home/scuba/Android/Sdk/cmake/3.22.1/bin/ninja",
+      "-C",
+      "/home/scuba/Documents/Satoshi_Index/android/app/.cxx/RelWithDebInfo/3c1h4i58/x86_64",
+      "clean"
+    ]
+  ],
+  "buildTargetsCommandComponents": [
+    "/home/scuba/Android/Sdk/cmake/3.22.1/bin/ninja",
+    "-C",
+    "/home/scuba/Documents/Satoshi_Index/android/app/.cxx/RelWithDebInfo/3c1h4i58/x86_64",
+    "{LIST_OF_TARGETS_TO_BUILD}"
+  ],
+  "libraries": {}
+}

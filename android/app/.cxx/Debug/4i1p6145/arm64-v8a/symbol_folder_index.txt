@@ -1,0 +1,1 @@
+/home/scuba/Documents/Satoshi_Index/build/app/intermediates/cxx/Debug/4i1p6145/obj/arm64-v8a
