@@ -379,4 +379,18 @@ final List<PriceEntry> coffeePriceData = [
     btcPrice: 92025.00,
     priceSats: 1456.0,
   ),
+  PriceEntry(
+    year: 2025,
+    quarter: 3,
+    priceEuro: 1.04,
+    btcPrice: 97963.00,
+    priceSats: 1062.0,
+  ),
+  PriceEntry(
+    year: 2025,
+    quarter: 4,
+    priceEuro: 1.06,
+    btcPrice: 85671.00,
+    priceSats: 1237.0,
+  ),
 ];

@@ -372,12 +372,19 @@ final List<PriceEntry> immobilierPriceData = [
     btcPrice: 70000.00,
     priceSats: 4200000.00,
   ),
-  /*
+
   PriceEntry(
     year: 2025,
     quarter: 2,
-    priceEuro: ,
+    priceEuro: 2945.00,
     btcPrice: 92025.00,
-    priceSats: ,
-  ), */
+    priceSats: 3200217,
+  ),
+  PriceEntry(
+    year: 2025,
+    quarter: 3,
+    priceEuro: 2955.00,
+    btcPrice: 97963.00,
+    priceSats: 3016955,
+  ),
 ];

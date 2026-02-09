@@ -65,4 +65,6 @@ final List<BTCPriceEntry> btcPriceData = [
   BTCPriceEntry(year: 2024, quarter: 4, euro: 68367.35),
   BTCPriceEntry(year: 2025, quarter: 1, euro: 70000.0),
   BTCPriceEntry(year: 2025, quarter: 2, euro: 92025.0),
+  BTCPriceEntry(year: 2025, quarter: 3, euro: 97963.0),
+  BTCPriceEntry(year: 2025, quarter: 4, euro: 85671.0),
 ];

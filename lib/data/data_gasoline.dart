@@ -379,4 +379,18 @@ final List<PriceEntry> gasolinePriceData = [
     btcPrice: 92025.00,
     priceSats: 1869.05,
   ),
+  PriceEntry(
+    year: 2025,
+    quarter: 3,
+    priceEuro: 1.72,
+    btcPrice: 97963.00,
+    priceSats: 1756.05,
+  ),
+  PriceEntry(
+    year: 2025,
+    quarter: 4,
+    priceEuro: 1.72,
+    btcPrice: 85672.00,
+    priceSats: 2008.05,
+  ),
 ];
