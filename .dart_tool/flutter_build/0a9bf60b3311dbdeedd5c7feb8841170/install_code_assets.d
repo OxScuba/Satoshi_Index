@@ -1,1 +1,0 @@
- /home/scuba/Documents/Satoshi_Index/.dart_tool/flutter_build/0a9bf60b3311dbdeedd5c7feb8841170/native_assets.json: 

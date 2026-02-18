@@ -1,4 +1,0 @@
-#Mon Jul 14 17:53:41 CEST 2025
-base.0=/home/scuba/Documents/Satoshi_Index/build/app/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-renamed.0=classes.dex
-path.0=classes.dex
