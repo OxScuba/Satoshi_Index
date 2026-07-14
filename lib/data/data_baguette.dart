@@ -393,4 +393,18 @@ final List<PriceEntry> baguettePriceData = [
     btcPrice: 85671.0,
     priceSats: 1190.60,
   ),
+  PriceEntry(
+    year: 2026,
+    quarter: 1,
+    priceEuro: 1.03,
+    btcPrice: 65494.53,
+    priceSats: 1572.65,
+  ),
+  PriceEntry(
+    year: 2026,
+    quarter: 2,
+    priceEuro: 1.03,
+    btcPrice: 61591.58,
+    priceSats: 1672.31,
+  ),
 ];

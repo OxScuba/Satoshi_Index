@@ -89,6 +89,7 @@ class _HomePageState extends State<HomePage> {
     coffeeProduct,
     beefProduct,
     pizzaProduct,
+    goldProduct,
     immobilierProduct,
   ];
 

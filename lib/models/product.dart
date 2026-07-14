@@ -7,6 +7,7 @@ import '../data/data_coffee.dart';
 import '../data/data_beef.dart';
 import '../data/data_pizza.dart';
 import '../data/data_immobilier.dart';
+import '../data/data_or.dart';
 
 class Product {
   final String id;
@@ -96,4 +97,12 @@ final Product immobilierProduct = Product(
   staticPrice: 13.60,
   data: immobilierPriceData,
   source: "https://www.insee.fr/fr/statistiques/serie/010001868",
+);
+final Product goldProduct = Product(
+  id: "or",
+  name: "Or (1 g)",
+  emoji: "🪙",
+  staticPrice: 125.33,
+  data: goldPriceData,
+  source: "https://www.insee.fr/fr/statistiques/serie/010002100",
 );

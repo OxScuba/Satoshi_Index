@@ -406,4 +406,19 @@ final List<PriceEntry> coffeePriceData = [
     btcPrice: 85671.0,
     priceSats: 1400.71,
   ),
+  PriceEntry(
+    year: 2026,
+    quarter: 1,
+    priceEuro: 1.21,
+    btcPrice: 65494.53,
+    priceSats: 1847.48,
+  ),
+  // Valeur raccordée provisoire à la nouvelle série INSEE base 2025.
+  PriceEntry(
+    year: 2026,
+    quarter: 2,
+    priceEuro: 1.21,
+    btcPrice: 61591.58,
+    priceSats: 1964.55,
+  ),
 ];
