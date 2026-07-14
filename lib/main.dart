@@ -126,6 +126,8 @@ class _HomePageState extends State<HomePage> {
       showSats = prefs.getBool('showSats') ?? false;
       selectedCurrency = appCurrencyFromCode(prefs.getString('currency'));
     });
+
+    await _exportAndSyncWidgets();
   }
 
   Future<void> fetchMarketPrices() async {
@@ -139,8 +141,7 @@ class _HomePageState extends State<HomePage> {
         marketPriceError = null;
       });
 
-      // Les données historiques et les exports restent exprimés en euros.
-      await ProductExportService.exportProducts(products, prices);
+      await _exportAndSyncWidgets();
     } catch (error) {
       if (!mounted) return;
 
@@ -148,6 +149,21 @@ class _HomePageState extends State<HomePage> {
         marketPriceError = error.toString();
       });
     }
+  }
+
+  Future<void> _exportAndSyncWidgets() async {
+    final prices = marketPrices;
+
+    if (prices == null) {
+      return;
+    }
+
+    await ProductExportService.exportProducts(
+      products,
+      prices,
+      selectedCurrency: selectedCurrency,
+      showSats: showSats,
+    );
   }
 
   @override

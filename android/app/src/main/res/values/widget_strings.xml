@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="product_widget_name">Satoshi Index · Produit</string>
+    <string name="product_widget_config_title">Configurer le widget</string>
+    <string name="product_widget_config_subtitle">Choisis l’item puis le style adapté à ton fond d’écran.</string>
+
+    <string name="product_widget_product_section">Item affiché</string>
+    <string name="product_widget_appearance_section">Apparence</string>
+
+    <string name="product_widget_appearance_classic">Classique · fond plein</string>
+    <string name="product_widget_appearance_transparent_white">Transparent · texte blanc</string>
+    <string name="product_widget_appearance_transparent_black">Transparent · texte noir</string>
+
+    <string name="product_widget_no_products">Aucun produit disponible.</string>
+    <string name="product_widget_add">Enregistrer le widget</string>
+</resources>

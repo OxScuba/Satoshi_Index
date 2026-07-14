@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:configure="com.example.satoshi_index.widgets.ProductWidgetConfigureActivity"
+    android:initialLayout="@layout/widget_product"
+    android:previewLayout="@layout/widget_product"
+
+    android:targetCellWidth="2"
+    android:targetCellHeight="1"
+
+    android:minWidth="110dp"
+    android:minHeight="48dp"
+
+    android:minResizeWidth="110dp"
+    android:minResizeHeight="48dp"
+
+    android:resizeMode="horizontal"
+    android:updatePeriodMillis="0"
+    android:widgetCategory="home_screen"
+    android:widgetFeatures="reconfigurable" />

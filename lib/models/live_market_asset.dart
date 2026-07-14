@@ -1,3 +1,1 @@
-enum LiveMarketAsset {
-  ethereum,
-}
+enum LiveMarketAsset { ethereum }

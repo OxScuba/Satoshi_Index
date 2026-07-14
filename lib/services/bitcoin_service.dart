@@ -20,16 +20,11 @@ class BitcoinService {
   static Future<MarketPrices> fetchMarketPrices() async {
     try {
       final response = await http
-          .get(
-            _priceUrl,
-            headers: const {'accept': 'application/json'},
-          )
+          .get(_priceUrl, headers: const {'accept': 'application/json'})
           .timeout(const Duration(seconds: 10));
 
       if (response.statusCode != 200) {
-        throw Exception(
-          'Erreur CoinGecko HTTP ${response.statusCode}',
-        );
+        throw Exception('Erreur CoinGecko HTTP ${response.statusCode}');
       }
 
       final decoded = jsonDecode(response.body);
@@ -49,9 +44,7 @@ class BitcoinService {
           btcUsd <= 0 ||
           ethEur <= 0 ||
           ethUsd <= 0) {
-        throw const FormatException(
-          'Réponse CoinGecko invalide',
-        );
+        throw const FormatException('Réponse CoinGecko invalide');
       }
 
       final fetchedAt = DateTime.now();
@@ -115,10 +108,7 @@ class BitcoinService {
       prefs.setDouble(_btcUsdCacheKey, btcUsd),
       prefs.setDouble(_ethEurCacheKey, ethEur),
       prefs.setDouble(_ethUsdCacheKey, ethUsd),
-      prefs.setInt(
-        _timestampCacheKey,
-        fetchedAt.millisecondsSinceEpoch,
-      ),
+      prefs.setInt(_timestampCacheKey, fetchedAt.millisecondsSinceEpoch),
     ]);
   }
 

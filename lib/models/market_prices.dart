@@ -44,10 +44,7 @@ class MarketPrices {
     }
   }
 
-  double liveAssetPrice(
-    LiveMarketAsset asset,
-    AppCurrency currency,
-  ) {
+  double liveAssetPrice(LiveMarketAsset asset, AppCurrency currency) {
     switch (asset) {
       case LiveMarketAsset.ethereum:
         return ethereumPrice(currency);
@@ -65,10 +62,7 @@ class MarketPrices {
     return liveAssetPriceInBitcoin(asset) * 100000000;
   }
 
-  double convertEuro(
-    double amountEuro,
-    AppCurrency currency,
-  ) {
+  double convertEuro(double amountEuro, AppCurrency currency) {
     switch (currency) {
       case AppCurrency.eur:
         return amountEuro;
