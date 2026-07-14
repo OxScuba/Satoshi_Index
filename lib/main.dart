@@ -1,21 +1,27 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'models/app_currency.dart';
+import 'models/market_prices.dart';
 import 'models/product.dart';
-import 'pages/product_detail_page.dart';
-import 'pages/logo_page.dart';
-import 'pages/satoshi_page.dart';
 import 'pages/bullbitcoin_page.dart';
+import 'pages/logo_page.dart';
+import 'pages/outils_page.dart';
+import 'pages/product_detail_page.dart';
+import 'pages/satoshi_page.dart';
 import 'pages/settings_page.dart';
 import 'pages/trading_chart_page.dart';
-import 'pages/outils_page.dart';
 import 'services/bitcoin_service.dart';
 import 'services/product_export_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   final prefs = await SharedPreferences.getInstance();
   final isDarkMode = prefs.getBool('darkMode') ?? false;
+
   runApp(SatoshiIndexApp(isDarkMode: isDarkMode));
 }
 
@@ -47,6 +53,7 @@ class _SatoshiIndexAppState extends State<SatoshiIndexApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Satoshi Index',
+      debugShowCheckedModeBanner: false,
       themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
       theme: ThemeData(
         primarySwatch: Colors.orange,
@@ -77,7 +84,10 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  double? bitcoinPriceEUR;
+  MarketPrices? marketPrices;
+  AppCurrency selectedCurrency = AppCurrency.eur;
+  String? marketPriceError;
+
   bool showSats = false;
   Timer? _timer;
 
@@ -96,18 +106,46 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+
     _loadSettings();
-    fetchBitcoinPrice();
-    _timer = Timer.periodic(const Duration(minutes: 2), (timer) {
-      fetchBitcoinPrice();
+    fetchMarketPrices();
+
+    _timer = Timer.periodic(const Duration(minutes: 2), (_) {
+      fetchMarketPrices();
     });
   }
 
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
+
+    if (!mounted) return;
+
     setState(() {
       showSats = prefs.getBool('showSats') ?? false;
+      selectedCurrency = appCurrencyFromCode(prefs.getString('currency'));
     });
+  }
+
+  Future<void> fetchMarketPrices() async {
+    try {
+      final prices = await BitcoinService.fetchMarketPrices();
+
+      if (!mounted) return;
+
+      setState(() {
+        marketPrices = prices;
+        marketPriceError = null;
+      });
+
+      // Les données historiques et les exports restent exprimés en euros.
+      await ProductExportService.exportProducts(products, prices.btcEur);
+    } catch (error) {
+      if (!mounted) return;
+
+      setState(() {
+        marketPriceError = error.toString();
+      });
+    }
   }
 
   @override
@@ -116,18 +154,14 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
-  Future<void> fetchBitcoinPrice() async {
-    final price = await BitcoinService.fetchBitcoinPriceEUR();
-    setState(() {
-      bitcoinPriceEUR = price;
-    });
-    await ProductExportService.exportProducts(products, price);
-  }
-
   @override
   Widget build(BuildContext context) {
     final isDark = widget.isDarkMode;
     final textColor = isDark ? Colors.white : Colors.black;
+
+    final prices = marketPrices;
+    final currencySymbol = selectedCurrency.symbol;
+    final bitcoinPrice = prices?.bitcoinPrice(selectedCurrency);
 
     return Scaffold(
       appBar: AppBar(
@@ -148,6 +182,7 @@ class _HomePageState extends State<HomePage> {
                             SettingsPage(onThemeChanged: widget.onThemeChanged),
                   ),
                 );
+
                 await _loadSettings();
               },
             ),
@@ -179,11 +214,13 @@ class _HomePageState extends State<HomePage> {
                 ],
               ),
             ),
-            if (bitcoinPriceEUR != null)
+            if (bitcoinPrice != null)
               GestureDetector(
                 onTap: () async {
-                  await fetchBitcoinPrice();
+                  await fetchMarketPrices();
+
                   if (!mounted) return;
+
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => const TradingChartPage()),
@@ -199,7 +236,7 @@ class _HomePageState extends State<HomePage> {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      "= ${bitcoinPriceEUR!.toStringAsFixed(2).replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+\.)'), (match) => '${match[1]} ')} €",
+                      '= ${_formatFiat(bitcoinPrice)} $currencySymbol',
                       style: TextStyle(fontSize: 14, color: textColor),
                     ),
                   ],
@@ -209,10 +246,47 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
       body:
-          bitcoinPriceEUR == null
-              ? const Center(child: CircularProgressIndicator())
+          prices == null
+              ? Center(
+                child:
+                    marketPriceError == null
+                        ? const CircularProgressIndicator()
+                        : Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.cloud_off,
+                                size: 42,
+                                color: Colors.orange,
+                              ),
+                              const SizedBox(height: 12),
+                              const Text(
+                                'Impossible de charger le cours du Bitcoin.',
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                marketPriceError!,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  color: Colors.grey,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              ElevatedButton.icon(
+                                onPressed: fetchMarketPrices,
+                                icon: const Icon(Icons.refresh),
+                                label: const Text('Réessayer'),
+                              ),
+                            ],
+                          ),
+                        ),
+              )
               : Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(16),
                 child: Column(
                   children: [
                     Expanded(
@@ -221,13 +295,24 @@ class _HomePageState extends State<HomePage> {
                         itemBuilder: (context, index) {
                           final item = products[index];
                           final latestEntry = item.data.last;
+
+                          final displayedPrice = prices.convertEuro(
+                            latestEntry.priceEuro,
+                            selectedCurrency,
+                          );
+
+                          final displayedBitcoinPrice = prices.bitcoinPrice(
+                            selectedCurrency,
+                          );
+
                           final sats =
-                              ((latestEntry.priceEuro / bitcoinPriceEUR!) *
+                              ((displayedPrice / displayedBitcoinPrice) *
                                       100000000)
                                   .round();
+
                           final formatted =
                               showSats
-                                  ? formatSatsOnly(sats)
+                                  ? formatSatsOnly(sats, isDark)
                                   : formatSatsDisplay(sats, isDark);
 
                           return Card(
@@ -242,7 +327,8 @@ class _HomePageState extends State<HomePage> {
                               ),
                               title: formatted,
                               subtitle: Text(
-                                "${latestEntry.priceEuro.toStringAsFixed(2)} €",
+                                '${_formatFiat(displayedPrice)} '
+                                '$currencySymbol',
                               ),
                               onTap: () {
                                 Navigator.push(
@@ -264,10 +350,10 @@ class _HomePageState extends State<HomePage> {
                       children: [
                         _buildNavButton(
                           Icons.build,
-                          "Outils",
+                          'Outils',
                           OutilsPage(
                             products: products,
-                            bitcoinPriceEUR: bitcoinPriceEUR!,
+                            marketPrices: prices,
                             isDark: isDark,
                           ),
                         ),
@@ -279,7 +365,7 @@ class _HomePageState extends State<HomePage> {
                         const SizedBox(width: 8),
                         _buildNavButton(
                           Icons.currency_bitcoin,
-                          "Sat ⇄ BTC",
+                          'Sat ⇄ BTC',
                           const SatoshiPage(),
                         ),
                       ],
@@ -288,6 +374,15 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
     );
+  }
+
+  String _formatFiat(double value) {
+    return value
+        .toStringAsFixed(2)
+        .replaceAllMapped(
+          RegExp(r'(\d)(?=(\d{3})+\.)'),
+          (match) => '${match[1]} ',
+        );
   }
 
   Widget _buildNavButton(IconData icon, String label, Widget page) {
@@ -321,15 +416,19 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget formatSatsOnly(int sats) {
+  Widget formatSatsOnly(int sats, bool isDark) {
     final formatted = sats.toString().replaceAllMapped(
       RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
-      (m) => '${m[1]} ',
+      (match) => '${match[1]} ',
     );
+
     return RichText(
       text: TextSpan(
         text: '',
-        style: const TextStyle(fontSize: 18, color: Colors.black),
+        style: TextStyle(
+          fontSize: 18,
+          color: isDark ? Colors.white : Colors.black,
+        ),
         children: [
           TextSpan(
             text: formatted,
@@ -339,7 +438,7 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
           const TextSpan(
-            text: " sats",
+            text: ' sats',
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 18,
@@ -356,16 +455,50 @@ class _HomePageState extends State<HomePage> {
     final parts = str.split('.');
     final beforeDecimal = parts[0];
     final afterDecimal = parts[1];
+
     final grouped =
-        "$beforeDecimal.${afterDecimal.substring(0, 2)} ${afterDecimal.substring(2, 5)} ${afterDecimal.substring(5)}";
-    final plain = "$beforeDecimal.$afterDecimal";
+        '$beforeDecimal.'
+        '${afterDecimal.substring(0, 2)} '
+        '${afterDecimal.substring(2, 5)} '
+        '${afterDecimal.substring(5)}';
+
+    final plain = '$beforeDecimal.$afterDecimal';
     final firstSigIndex = plain.indexOf(RegExp(r'[1-9]'));
 
-    int spaceOffset = 0;
-    for (int i = 0; i < grouped.length && i < grouped.length - 2; i++) {
-      if (grouped[i] == ' ') spaceOffset++;
-      if (grouped[i] == plain[firstSigIndex]) break;
+    if (firstSigIndex == -1) {
+      return RichText(
+        text: TextSpan(
+          text: grouped,
+          style: TextStyle(
+            fontSize: 18,
+            color: isDark ? Colors.white : Colors.black,
+          ),
+          children: const [
+            TextSpan(
+              text: ' ₿',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+                color: Colors.orange,
+              ),
+            ),
+          ],
+        ),
+      );
     }
+
+    int spaceOffset = 0;
+
+    for (int i = 0; i < grouped.length && i < grouped.length - 2; i++) {
+      if (grouped[i] == ' ') {
+        spaceOffset++;
+      }
+
+      if (grouped[i] == plain[firstSigIndex]) {
+        break;
+      }
+    }
+
     final boldStart = firstSigIndex + spaceOffset;
 
     return RichText(
@@ -384,7 +517,7 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
           const TextSpan(
-            text: " ₿",
+            text: ' ₿',
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 18,
