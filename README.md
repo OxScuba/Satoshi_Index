@@ -35,6 +35,7 @@ Voici la liste complète des produits actuellement disponibles dans l’applicat
 | 🍺 Bière        | 🍺    | Prix d’un demi (25cl)                                    | Multiplié par 2 (pinte)   |
 | 🚬 Cigarette    | 🚬    | Prix du paquet de 20 cigarettes                          | Aucun                     |
 | 🥩 Côte de bœuf | 🥩    | Prix au kilo de côte de bœuf                             | Aucun                     |
+| 🪙 Or   | 🪙    | Prix moyen trimestriel d'un gramme d'or en euros.       | 1 once troy = 31.1034768 grammes |
 | 🏠 Immobilier   | 🏠    | Indice des prix immobiliers (référence 2015 = 100)       | Base de 2300 €/m² en 2015 |
 
 ---
