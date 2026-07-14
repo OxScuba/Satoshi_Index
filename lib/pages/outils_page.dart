@@ -1,9 +1,41 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 
 import '../models/market_prices.dart';
 import '../models/product.dart';
 
 enum _ConversionUnit { sats, btc, eur, usd }
+
+class _SignificantDigitsController extends TextEditingController {
+  @override
+  TextSpan buildTextSpan({
+    required BuildContext context,
+    TextStyle? style,
+    required bool withComposing,
+  }) {
+    final value = text;
+    final firstSignificantIndex = value.indexOf(RegExp(r'[1-9]'));
+
+    if (value.isEmpty || firstSignificantIndex == -1) {
+      return TextSpan(text: value, style: style);
+    }
+
+    return TextSpan(
+      style: style,
+      children: [
+        TextSpan(text: value.substring(0, firstSignificantIndex)),
+        TextSpan(
+          text: value.substring(firstSignificantIndex),
+          style: style?.copyWith(
+            color: Colors.orange,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
+    );
+  }
+}
 
 class OutilsPage extends StatefulWidget {
   final List<Product> products;
@@ -25,7 +57,8 @@ class _OutilsPageState extends State<OutilsPage> {
   static const double _satsPerBitcoin = 100000000;
 
   late Product selectedProduct;
-  late final Map<_ConversionUnit, TextEditingController> _controllers;
+  late final Map<_ConversionUnit, _SignificantDigitsController> _controllers;
+  late final Map<_ConversionUnit, FocusNode> _focusNodes;
 
   _ConversionUnit? _activeUnit;
   double _btcValue = 0;
@@ -35,9 +68,23 @@ class _OutilsPageState extends State<OutilsPage> {
     super.initState();
 
     selectedProduct = widget.products.first;
+
     _controllers = {
-      for (final unit in _ConversionUnit.values) unit: TextEditingController(),
+      for (final unit in _ConversionUnit.values)
+        unit: _SignificantDigitsController(),
     };
+
+    _focusNodes = {
+      for (final unit in _ConversionUnit.values) unit: FocusNode(),
+    };
+
+    for (final unit in _ConversionUnit.values) {
+      _focusNodes[unit]!.addListener(() {
+        if (!_focusNodes[unit]!.hasFocus) {
+          _formatFieldAfterEditing(unit);
+        }
+      });
+    }
   }
 
   @override
@@ -45,6 +92,11 @@ class _OutilsPageState extends State<OutilsPage> {
     for (final controller in _controllers.values) {
       controller.dispose();
     }
+
+    for (final focusNode in _focusNodes.values) {
+      focusNode.dispose();
+    }
+
     super.dispose();
   }
 
@@ -54,9 +106,12 @@ class _OutilsPageState extends State<OutilsPage> {
         .replaceAll(RegExp(r'\s+'), '')
         .replaceAll(',', '.');
 
-    if (normalized.isEmpty) return null;
+    if (normalized.isEmpty) {
+      return null;
+    }
 
     final value = double.tryParse(normalized);
+
     if (value == null || !value.isFinite || value < 0) {
       return null;
     }
@@ -73,13 +128,21 @@ class _OutilsPageState extends State<OutilsPage> {
 
     if (raw.trim().isEmpty) {
       _clearOtherFields(source);
-      setState(() => _btcValue = 0);
+
+      setState(() {
+        _btcValue = 0;
+      });
+
       return;
     }
 
     if (value == null) {
       _clearOtherFields(source);
-      setState(() => _btcValue = 0);
+
+      setState(() {
+        _btcValue = 0;
+      });
+
       return;
     }
 
@@ -90,7 +153,9 @@ class _OutilsPageState extends State<OutilsPage> {
       _ConversionUnit.usd => value / widget.marketPrices.btcUsd,
     };
 
-    setState(() => _btcValue = btc);
+    setState(() {
+      _btcValue = btc;
+    });
 
     final calculated = <_ConversionUnit, double>{
       _ConversionUnit.sats: btc * _satsPerBitcoin,
@@ -100,10 +165,23 @@ class _OutilsPageState extends State<OutilsPage> {
     };
 
     for (final entry in calculated.entries) {
-      if (entry.key == source) continue;
+      if (entry.key == source) {
+        continue;
+      }
 
       _setControllerText(entry.key, _formatValue(entry.key, entry.value));
     }
+  }
+
+  void _formatFieldAfterEditing(_ConversionUnit unit) {
+    final controller = _controllers[unit]!;
+    final value = _parseNumber(controller.text);
+
+    if (value == null) {
+      return;
+    }
+
+    _setControllerText(unit, _formatValue(unit, value));
   }
 
   void _clearOtherFields(_ConversionUnit source) {
@@ -119,6 +197,8 @@ class _OutilsPageState extends State<OutilsPage> {
       controller.clear();
     }
 
+    FocusScope.of(context).unfocus();
+
     setState(() {
       _activeUnit = null;
       _btcValue = 0;
@@ -127,6 +207,7 @@ class _OutilsPageState extends State<OutilsPage> {
 
   void _setControllerText(_ConversionUnit unit, String value) {
     final controller = _controllers[unit]!;
+
     controller.value = TextEditingValue(
       text: value,
       selection: TextSelection.collapsed(offset: value.length),
@@ -137,11 +218,13 @@ class _OutilsPageState extends State<OutilsPage> {
     switch (unit) {
       case _ConversionUnit.sats:
         return _groupInteger(value.round());
+
       case _ConversionUnit.btc:
-        return _trimTrailingZeros(value.toStringAsFixed(8));
+        return _groupBitcoin(value);
+
       case _ConversionUnit.eur:
       case _ConversionUnit.usd:
-        return value.toStringAsFixed(2);
+        return _groupFiat(value);
     }
   }
 
@@ -152,21 +235,37 @@ class _OutilsPageState extends State<OutilsPage> {
     );
   }
 
-  String _trimTrailingZeros(String value) {
-    if (!value.contains('.')) return value;
+  String _groupBitcoin(double value) {
+    final fixed = value.toStringAsFixed(8);
+    final parts = fixed.split('.');
 
-    return value
-        .replaceFirst(RegExp(r'0+$'), '')
-        .replaceFirst(RegExp(r'\.$'), '');
+    final integerPart = _groupInteger(int.parse(parts[0]));
+    final decimals = parts[1];
+
+    return '$integerPart.'
+        '${decimals.substring(0, 2)} '
+        '${decimals.substring(2, 5)} '
+        '${decimals.substring(5, 8)}';
+  }
+
+  String _groupFiat(double value) {
+    final fixed = value.toStringAsFixed(2);
+    final parts = fixed.split('.');
+
+    final integerPart = _groupInteger(int.parse(parts[0]));
+
+    return '$integerPart.${parts[1]}';
   }
 
   String _formatQuantity(double quantity) {
     if (quantity >= 1000) {
       return _groupInteger(quantity.round());
     }
+
     if (quantity >= 10) {
       return quantity.toStringAsFixed(1);
     }
+
     return quantity.toStringAsFixed(2);
   }
 
@@ -177,19 +276,39 @@ class _OutilsPageState extends State<OutilsPage> {
     required IconData icon,
   }) {
     final isActive = _activeUnit == unit;
+    final textColor = widget.isDark ? Colors.white : Colors.black;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: TextField(
         controller: _controllers[unit],
+        focusNode: _focusNodes[unit],
         keyboardType: TextInputType.numberWithOptions(
           decimal: unit != _ConversionUnit.sats,
         ),
-        onChanged: (value) => _convertFrom(unit, value),
+        style: TextStyle(
+          fontSize: 18,
+          color: textColor,
+          fontFeatures: const [FontFeature.tabularFigures()],
+        ),
+        textAlign: TextAlign.right,
+        onTap: () {
+          setState(() {
+            _activeUnit = unit;
+          });
+        },
+        onChanged: (value) {
+          _convertFrom(unit, value);
+        },
         decoration: InputDecoration(
           labelText: label,
           prefixIcon: Icon(icon, color: isActive ? Colors.orange : null),
           suffixText: suffix,
+          suffixStyle: const TextStyle(
+            color: Colors.orange,
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+          ),
           filled: isActive,
           fillColor: isActive ? Colors.orange.withOpacity(0.08) : null,
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
@@ -202,14 +321,57 @@ class _OutilsPageState extends State<OutilsPage> {
     );
   }
 
+  Widget _buildBitcoinPriceHeader() {
+    final textColor = widget.isDark ? Colors.white : Colors.black;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Image.asset('lib/assets/images/bitcoin.png', height: 24, width: 24),
+        const SizedBox(width: 8),
+        Flexible(
+          child: RichText(
+            textAlign: TextAlign.center,
+            text: TextSpan(
+              style: TextStyle(
+                color: textColor,
+                fontWeight: FontWeight.bold,
+                fontSize: 15,
+              ),
+              children: [
+                const TextSpan(text: '1 BTC = '),
+                TextSpan(
+                  text: _groupFiat(widget.marketPrices.btcEur),
+                  style: const TextStyle(color: Colors.orange),
+                ),
+                const TextSpan(
+                  text: ' €',
+                  style: TextStyle(color: Colors.orange),
+                ),
+                const TextSpan(text: '  •  '),
+                TextSpan(
+                  text: _groupFiat(widget.marketPrices.btcUsd),
+                  style: const TextStyle(color: Colors.orange),
+                ),
+                const TextSpan(
+                  text: ' \$',
+                  style: TextStyle(color: Colors.orange),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildProductEquivalent() {
     if (_btcValue <= 0) {
       return const SizedBox.shrink();
     }
 
     final euroValue = _btcValue * widget.marketPrices.btcEur;
-    final itemPriceEuro =
-        (selectedProduct.data.last.priceEuro as num).toDouble();
+    final itemPriceEuro = selectedProduct.data.last.priceEuro;
 
     if (itemPriceEuro <= 0) {
       return const SizedBox.shrink();
@@ -231,20 +393,96 @@ class _OutilsPageState extends State<OutilsPage> {
               ),
             ),
             const SizedBox(height: 8),
-            Text(
-              '≈ ${_formatQuantity(quantity)} × '
-              '${selectedProduct.emoji} ${selectedProduct.name}',
+            RichText(
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              text: TextSpan(
+                style: TextStyle(
+                  fontSize: 18,
+                  color: widget.isDark ? Colors.white : Colors.black,
+                ),
+                children: [
+                  const TextSpan(text: '≈ '),
+                  TextSpan(
+                    text: _formatQuantity(quantity),
+                    style: const TextStyle(
+                      color: Colors.orange,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  TextSpan(
+                    text:
+                        ' × ${selectedProduct.emoji} '
+                        '${selectedProduct.name}',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 4),
-            Text(
-              'Prix unitaire de référence : '
-              '${itemPriceEuro.toStringAsFixed(2)} €',
+            const SizedBox(height: 5),
+            RichText(
               textAlign: TextAlign.center,
+              text: TextSpan(
+                style: TextStyle(
+                  color: widget.isDark ? Colors.white70 : Colors.black54,
+                ),
+                children: [
+                  const TextSpan(text: 'Prix unitaire de référence : '),
+                  TextSpan(
+                    text: _groupFiat(itemPriceEuro),
+                    style: const TextStyle(
+                      color: Colors.orange,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const TextSpan(
+                    text: ' €',
+                    style: TextStyle(
+                      color: Colors.orange,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildExchangeRateFooter() {
+    final textColor = widget.isDark ? Colors.white70 : Colors.black54;
+
+    return RichText(
+      textAlign: TextAlign.center,
+      text: TextSpan(
+        style: TextStyle(color: textColor, fontSize: 12),
+        children: [
+          const TextSpan(text: 'Taux croisé : 1 € = '),
+          TextSpan(
+            text: widget.marketPrices.eurToUsd.toStringAsFixed(4),
+            style: const TextStyle(
+              color: Colors.orange,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const TextSpan(
+            text: ' \$',
+            style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold),
+          ),
+          const TextSpan(text: '  •  1 \$ = '),
+          TextSpan(
+            text: widget.marketPrices.usdToEur.toStringAsFixed(4),
+            style: const TextStyle(
+              color: Colors.orange,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const TextSpan(
+            text: ' €',
+            style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold),
+          ),
+        ],
       ),
     );
   }
@@ -267,30 +505,7 @@ class _OutilsPageState extends State<OutilsPage> {
           padding: const EdgeInsets.all(20),
           child: Column(
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Image.asset(
-                    'lib/assets/images/bitcoin.png',
-                    height: 24,
-                    width: 24,
-                  ),
-                  const SizedBox(width: 8),
-                  Flexible(
-                    child: Text(
-                      '1 BTC = '
-                      '${widget.marketPrices.btcEur.toStringAsFixed(2)} €'
-                      '  •  '
-                      '${widget.marketPrices.btcUsd.toStringAsFixed(2)} \$',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: textColor,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+              _buildBitcoinPriceHeader(),
               const SizedBox(height: 6),
               Text(
                 widget.marketPrices.isFromCache
@@ -314,10 +529,11 @@ class _OutilsPageState extends State<OutilsPage> {
                 ),
               ),
               const SizedBox(height: 6),
-              const Text(
+              Text(
                 'Saisis un montant dans une case : '
                 'les trois autres se calculent immédiatement.',
                 textAlign: TextAlign.center,
+                style: TextStyle(color: textColor),
               ),
               const SizedBox(height: 20),
               _buildField(
@@ -341,7 +557,7 @@ class _OutilsPageState extends State<OutilsPage> {
               _buildField(
                 unit: _ConversionUnit.usd,
                 label: 'Dollars américains',
-                suffix: r'$',
+                suffix: '\$',
                 icon: Icons.attach_money,
               ),
               Align(
@@ -365,8 +581,13 @@ class _OutilsPageState extends State<OutilsPage> {
                       value: selectedProduct,
                       isExpanded: true,
                       onChanged: (product) {
-                        if (product == null) return;
-                        setState(() => selectedProduct = product);
+                        if (product == null) {
+                          return;
+                        }
+
+                        setState(() {
+                          selectedProduct = product;
+                        });
                       },
                       items:
                           widget.products
@@ -386,18 +607,7 @@ class _OutilsPageState extends State<OutilsPage> {
               ),
               _buildProductEquivalent(),
               const SizedBox(height: 18),
-              Text(
-                'Taux croisé : 1 € = '
-                '${widget.marketPrices.eurToUsd.toStringAsFixed(4)} \$'
-                '  •  '
-                '1 \$ = '
-                '${widget.marketPrices.usdToEur.toStringAsFixed(4)} €',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: textColor.withOpacity(0.7),
-                  fontSize: 12,
-                ),
-              ),
+              _buildExchangeRateFooter(),
             ],
           ),
         ),
