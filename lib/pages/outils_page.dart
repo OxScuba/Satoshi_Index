@@ -2,11 +2,22 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
+import '../models/app_currency.dart';
 import '../models/market_prices.dart';
 import '../models/product.dart';
 
-enum _ConversionUnit { sats, btc, eur, usd }
+enum _ConversionUnit {
+  sats,
+  btc,
+  eur,
+  usd,
+}
 
+/// Colore uniquement les chiffres significatifs en orange.
+///
+/// Exemple :
+/// 0.00 001 234 BTC
+/// └────┘ noir     └─ orange
 class _SignificantDigitsController extends TextEditingController {
   @override
   TextSpan buildTextSpan({
@@ -18,13 +29,18 @@ class _SignificantDigitsController extends TextEditingController {
     final firstSignificantIndex = value.indexOf(RegExp(r'[1-9]'));
 
     if (value.isEmpty || firstSignificantIndex == -1) {
-      return TextSpan(text: value, style: style);
+      return TextSpan(
+        text: value,
+        style: style,
+      );
     }
 
     return TextSpan(
       style: style,
       children: [
-        TextSpan(text: value.substring(0, firstSignificantIndex)),
+        TextSpan(
+          text: value.substring(0, firstSignificantIndex),
+        ),
         TextSpan(
           text: value.substring(firstSignificantIndex),
           style: style?.copyWith(
@@ -119,7 +135,10 @@ class _OutilsPageState extends State<OutilsPage> {
     return value;
   }
 
-  void _convertFrom(_ConversionUnit source, String raw) {
+  void _convertFrom(
+    _ConversionUnit source,
+    String raw,
+  ) {
     final value = _parseNumber(raw);
 
     setState(() {
@@ -169,7 +188,10 @@ class _OutilsPageState extends State<OutilsPage> {
         continue;
       }
 
-      _setControllerText(entry.key, _formatValue(entry.key, entry.value));
+      _setControllerText(
+        entry.key,
+        _formatValue(entry.key, entry.value),
+      );
     }
   }
 
@@ -181,7 +203,10 @@ class _OutilsPageState extends State<OutilsPage> {
       return;
     }
 
-    _setControllerText(unit, _formatValue(unit, value));
+    _setControllerText(
+      unit,
+      _formatValue(unit, value),
+    );
   }
 
   void _clearOtherFields(_ConversionUnit source) {
@@ -205,16 +230,24 @@ class _OutilsPageState extends State<OutilsPage> {
     });
   }
 
-  void _setControllerText(_ConversionUnit unit, String value) {
+  void _setControllerText(
+    _ConversionUnit unit,
+    String value,
+  ) {
     final controller = _controllers[unit]!;
 
     controller.value = TextEditingValue(
       text: value,
-      selection: TextSelection.collapsed(offset: value.length),
+      selection: TextSelection.collapsed(
+        offset: value.length,
+      ),
     );
   }
 
-  String _formatValue(_ConversionUnit unit, double value) {
+  String _formatValue(
+    _ConversionUnit unit,
+    double value,
+  ) {
     switch (unit) {
       case _ConversionUnit.sats:
         return _groupInteger(value.round());
@@ -289,7 +322,9 @@ class _OutilsPageState extends State<OutilsPage> {
         style: TextStyle(
           fontSize: 18,
           color: textColor,
-          fontFeatures: const [FontFeature.tabularFigures()],
+          fontFeatures: const [
+            FontFeature.tabularFigures(),
+          ],
         ),
         textAlign: TextAlign.right,
         onTap: () {
@@ -302,7 +337,10 @@ class _OutilsPageState extends State<OutilsPage> {
         },
         decoration: InputDecoration(
           labelText: label,
-          prefixIcon: Icon(icon, color: isActive ? Colors.orange : null),
+          prefixIcon: Icon(
+            icon,
+            color: isActive ? Colors.orange : null,
+          ),
           suffixText: suffix,
           suffixStyle: const TextStyle(
             color: Colors.orange,
@@ -310,11 +348,18 @@ class _OutilsPageState extends State<OutilsPage> {
             fontSize: 16,
           ),
           filled: isActive,
-          fillColor: isActive ? Colors.orange.withOpacity(0.08) : null,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+          fillColor: isActive
+              ? Colors.orange.withOpacity(0.08)
+              : null,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
-            borderSide: const BorderSide(color: Colors.orange, width: 2),
+            borderSide: const BorderSide(
+              color: Colors.orange,
+              width: 2,
+            ),
           ),
         ),
       ),
@@ -327,7 +372,11 @@ class _OutilsPageState extends State<OutilsPage> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Image.asset('lib/assets/images/bitcoin.png', height: 24, width: 24),
+        Image.asset(
+          'lib/assets/images/bitcoin.png',
+          height: 24,
+          width: 24,
+        ),
         const SizedBox(width: 8),
         Flexible(
           child: RichText(
@@ -342,20 +391,28 @@ class _OutilsPageState extends State<OutilsPage> {
                 const TextSpan(text: '1 BTC = '),
                 TextSpan(
                   text: _groupFiat(widget.marketPrices.btcEur),
-                  style: const TextStyle(color: Colors.orange),
+                  style: const TextStyle(
+                    color: Colors.orange,
+                  ),
                 ),
                 const TextSpan(
                   text: ' €',
-                  style: TextStyle(color: Colors.orange),
+                  style: TextStyle(
+                    color: Colors.orange,
+                  ),
                 ),
                 const TextSpan(text: '  •  '),
                 TextSpan(
                   text: _groupFiat(widget.marketPrices.btcUsd),
-                  style: const TextStyle(color: Colors.orange),
+                  style: const TextStyle(
+                    color: Colors.orange,
+                  ),
                 ),
                 const TextSpan(
                   text: ' \$',
-                  style: TextStyle(color: Colors.orange),
+                  style: TextStyle(
+                    color: Colors.orange,
+                  ),
                 ),
               ],
             ),
@@ -371,7 +428,12 @@ class _OutilsPageState extends State<OutilsPage> {
     }
 
     final euroValue = _btcValue * widget.marketPrices.btcEur;
-    final itemPriceEuro = selectedProduct.data.last.priceEuro;
+    final itemPriceEuro = selectedProduct.liveMarketAsset == null
+        ? selectedProduct.data.last.priceEuro
+        : widget.marketPrices.liveAssetPrice(
+            selectedProduct.liveMarketAsset!,
+            AppCurrency.eur,
+          );
 
     if (itemPriceEuro <= 0) {
       return const SizedBox.shrink();
@@ -413,7 +475,9 @@ class _OutilsPageState extends State<OutilsPage> {
                     text:
                         ' × ${selectedProduct.emoji} '
                         '${selectedProduct.name}',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ],
               ),
@@ -426,7 +490,9 @@ class _OutilsPageState extends State<OutilsPage> {
                   color: widget.isDark ? Colors.white70 : Colors.black54,
                 ),
                 children: [
-                  const TextSpan(text: 'Prix unitaire de référence : '),
+                  const TextSpan(
+                    text: 'Prix unitaire de référence : ',
+                  ),
                   TextSpan(
                     text: _groupFiat(itemPriceEuro),
                     style: const TextStyle(
@@ -456,7 +522,10 @@ class _OutilsPageState extends State<OutilsPage> {
     return RichText(
       textAlign: TextAlign.center,
       text: TextSpan(
-        style: TextStyle(color: textColor, fontSize: 12),
+        style: TextStyle(
+          color: textColor,
+          fontSize: 12,
+        ),
         children: [
           const TextSpan(text: 'Taux croisé : 1 € = '),
           TextSpan(
@@ -468,7 +537,10 @@ class _OutilsPageState extends State<OutilsPage> {
           ),
           const TextSpan(
             text: ' \$',
-            style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              color: Colors.orange,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const TextSpan(text: '  •  1 \$ = '),
           TextSpan(
@@ -480,7 +552,10 @@ class _OutilsPageState extends State<OutilsPage> {
           ),
           const TextSpan(
             text: ' €',
-            style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              color: Colors.orange,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ],
       ),
@@ -512,10 +587,9 @@ class _OutilsPageState extends State<OutilsPage> {
                     ? 'Cours hors ligne mis en cache à $fetchedAt'
                     : 'Cours mis à jour à $fetchedAt',
                 style: TextStyle(
-                  color:
-                      widget.marketPrices.isFromCache
-                          ? Colors.orange
-                          : Colors.grey,
+                  color: widget.marketPrices.isFromCache
+                      ? Colors.orange
+                      : Colors.grey,
                   fontSize: 12,
                 ),
               ),
@@ -533,7 +607,9 @@ class _OutilsPageState extends State<OutilsPage> {
                 'Saisis un montant dans une case : '
                 'les trois autres se calculent immédiatement.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: textColor),
+                style: TextStyle(
+                  color: textColor,
+                ),
               ),
               const SizedBox(height: 20),
               _buildField(
@@ -573,7 +649,9 @@ class _OutilsPageState extends State<OutilsPage> {
                 children: [
                   const Text(
                     'Comparer avec :',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -589,18 +667,17 @@ class _OutilsPageState extends State<OutilsPage> {
                           selectedProduct = product;
                         });
                       },
-                      items:
-                          widget.products
-                              .map(
-                                (product) => DropdownMenuItem<Product>(
-                                  value: product,
-                                  child: Text(
-                                    '${product.emoji} ${product.name}',
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              )
-                              .toList(),
+                      items: widget.products
+                          .map(
+                            (product) => DropdownMenuItem<Product>(
+                              value: product,
+                              child: Text(
+                                '${product.emoji} ${product.name}',
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          )
+                          .toList(),
                     ),
                   ),
                 ],

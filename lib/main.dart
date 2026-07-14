@@ -99,7 +99,9 @@ class _HomePageState extends State<HomePage> {
     coffeeProduct,
     beefProduct,
     pizzaProduct,
+    bigMacProduct,
     goldProduct,
+    ethereumProduct,
     immobilierProduct,
   ];
 
@@ -138,7 +140,7 @@ class _HomePageState extends State<HomePage> {
       });
 
       // Les données historiques et les exports restent exprimés en euros.
-      await ProductExportService.exportProducts(products, prices.btcEur);
+      await ProductExportService.exportProducts(products, prices);
     } catch (error) {
       if (!mounted) return;
 
@@ -296,10 +298,16 @@ class _HomePageState extends State<HomePage> {
                           final item = products[index];
                           final latestEntry = item.data.last;
 
-                          final displayedPrice = prices.convertEuro(
-                            latestEntry.priceEuro,
-                            selectedCurrency,
-                          );
+                          final displayedPrice =
+                              item.liveMarketAsset == null
+                                  ? prices.convertEuro(
+                                    latestEntry.priceEuro,
+                                    selectedCurrency,
+                                  )
+                                  : prices.liveAssetPrice(
+                                    item.liveMarketAsset!,
+                                    selectedCurrency,
+                                  );
 
                           final displayedBitcoinPrice = prices.bitcoinPrice(
                             selectedCurrency,
