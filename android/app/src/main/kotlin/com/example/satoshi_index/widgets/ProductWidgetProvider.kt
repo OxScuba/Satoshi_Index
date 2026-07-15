@@ -78,8 +78,10 @@ class ProductWidgetProvider : AppWidgetProvider() {
                 ?: ProductWidgetCatalog.fallbackProducts.first()
 
             val hasMarketData =
-                snapshot.market.btcEur > 0.0 &&
-                    snapshot.market.btcUsd > 0.0
+                snapshot.market.bitcoinPrice("eur") > 0.0 &&
+                    snapshot.market.bitcoinPrice(
+                        snapshot.currency,
+                    ) > 0.0
 
             val sats = if (hasMarketData) {
                 WidgetPriceFormatter.productPriceSats(

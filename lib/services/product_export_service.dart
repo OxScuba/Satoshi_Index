@@ -19,48 +19,45 @@ class ProductExportService {
     required Map<String, double> customPrices,
   }) async {
     final payload = <String, dynamic>{
-      'schemaVersion': 1,
+      'schemaVersion': 2,
       'currency': selectedCurrency.code,
       'showSats': showSats,
       'updatedAt': marketPrices.fetchedAt.millisecondsSinceEpoch,
       'market': <String, dynamic>{
-        'btcEur': marketPrices.btcEur,
-        'btcUsd': marketPrices.btcUsd,
-        'ethEur': marketPrices.ethEur,
-        'ethUsd': marketPrices.ethUsd,
+        'bitcoin': marketPrices.bitcoinPricesByCode,
+        'ethereum': marketPrices.ethereumPricesByCode,
       },
-      'products': products.map((product) {
-        final effectivePriceEuro =
-            ProductPriceResolver.effectivePriceEuro(
-          product: product,
-          customPrices: customPrices,
-          marketPrices: marketPrices,
-        );
+      'products':
+          products.map((product) {
+            final effectivePriceEuro = ProductPriceResolver.effectivePriceEuro(
+              product: product,
+              customPrices: customPrices,
+              marketPrices: marketPrices,
+            );
 
-        return <String, dynamic>{
-          'id': product.id,
-          'name': product.name,
-          'emoji': product.emoji,
-          'priceEuro': effectivePriceEuro,
-          'liveAsset': product.liveMarketAsset?.name,
-        };
-      }).toList(),
+            return <String, dynamic>{
+              'id': product.id,
+              'name': product.name,
+              'emoji': product.emoji,
+              'priceEuro': effectivePriceEuro,
+              'liveAsset': product.liveMarketAsset?.name,
+            };
+          }).toList(),
     };
 
     final encoded = jsonEncode(payload);
 
-    // Copie de diagnostic. Le partage réel avec Android passe par
-    // MethodChannel afin d'éviter toute ambiguïté de chemin.
+    // Copie de diagnostic. Le partage réel avec Android passe
+    // par MethodChannel afin d'éviter toute ambiguïté de chemin.
     if (!kIsWeb) {
       try {
         final directory = await getApplicationDocumentsDirectory();
-        final file = File(
-          '${directory.path}/widget_product_data.json',
-        );
+        final file = File('${directory.path}/widget_product_data.json');
         await file.writeAsString(encoded, flush: true);
       } catch (error) {
         debugPrint(
-          'Écriture du diagnostic widget impossible : $error',
+          'Écriture du diagnostic widget impossible : '
+          '$error',
         );
       }
     }

@@ -1,3 +1,4 @@
+
 package com.example.satoshi_index.widgets
 
 import android.content.Context
@@ -11,7 +12,8 @@ import java.util.Locale
 import kotlin.math.roundToLong
 
 object WidgetPriceFormatter {
-    private const val SATS_PER_BITCOIN = 100_000_000.0
+    private const val SATS_PER_BITCOIN =
+        100_000_000.0
 
     fun formatBitcoinOrSats(
         context: Context,
@@ -21,20 +23,31 @@ object WidgetPriceFormatter {
         val safeSats = sats.coerceAtLeast(0.0)
 
         return if (showSats) {
-            val text = "${groupInteger(safeSats.roundToLong())} sats"
+            val text =
+                "${groupInteger(
+                    safeSats.roundToLong(),
+                )} sats"
+
             styleFromFirstSignificantDigit(
                 context,
                 text,
                 colorEverythingWhenNoDigit = true,
             )
         } else {
-            val bitcoin = safeSats / SATS_PER_BITCOIN
-            val raw = String.format(Locale.US, "%.8f", bitcoin)
+            val bitcoin =
+                safeSats / SATS_PER_BITCOIN
+            val raw = String.format(
+                Locale.US,
+                "%.8f",
+                bitcoin,
+            )
             val parts = raw.split(".")
             val decimals = parts[1]
 
             val grouped =
-                "${groupInteger(parts[0].toLong())}." +
+                "${groupInteger(
+                    parts[0].toLong(),
+                )}." +
                     "${decimals.substring(0, 2)} " +
                     "${decimals.substring(2, 5)} " +
                     "${decimals.substring(5, 8)} ₿"
@@ -47,16 +60,32 @@ object WidgetPriceFormatter {
         }
     }
 
-    fun formatFiat(value: Double, currency: String): String {
+    fun formatFiat(
+        value: Double,
+        currency: String,
+    ): String {
+        val info =
+            WidgetCurrencyCatalog.info(currency)
+        val safeValue =
+            value.coerceAtLeast(0.0)
         val raw = String.format(
             Locale.US,
-            "%.2f",
-            value.coerceAtLeast(0.0),
+            "%.${info.fractionDigits}f",
+            safeValue,
         )
         val parts = raw.split(".")
-        val symbol = if (currency == "usd") "$" else "€"
+        val integerPart =
+            groupInteger(parts[0].toLong())
 
-        return "${groupInteger(parts[0].toLong())}.${parts[1]} $symbol"
+        val formatted = if (
+            info.fractionDigits == 0
+        ) {
+            integerPart
+        } else {
+            "$integerPart.${parts[1]}"
+        }
+
+        return "$formatted ${info.symbol}"
     }
 
     fun productPriceEuro(
@@ -64,7 +93,9 @@ object WidgetPriceFormatter {
         market: WidgetMarketSnapshot,
     ): Double {
         return when (product.liveAsset) {
-            "ethereum" -> market.ethEur
+            "ethereum" ->
+                market.ethereumPrice("eur")
+
             else -> product.priceEuro
         }
     }
@@ -73,24 +104,47 @@ object WidgetPriceFormatter {
         product: WidgetProductSnapshot,
         snapshot: WidgetDataSnapshot,
     ): Double {
-        val priceEuro = productPriceEuro(product, snapshot.market)
+        val currency =
+            WidgetCurrencyCatalog.normalize(
+                snapshot.currency,
+            )
+        val priceEuro =
+            productPriceEuro(
+                product,
+                snapshot.market,
+            )
 
-        if (snapshot.currency != "usd") {
+        if (currency == "eur") {
             return priceEuro
         }
 
-        if (
-            snapshot.market.btcEur <= 0.0 ||
-            snapshot.market.btcUsd <= 0.0
-        ) {
-            return 0.0
-        }
-
         return when (product.liveAsset) {
-            "ethereum" -> snapshot.market.ethUsd
-            else -> priceEuro *
-                snapshot.market.btcUsd /
-                snapshot.market.btcEur
+            "ethereum" ->
+                snapshot.market.ethereumPrice(
+                    currency,
+                )
+
+            else -> {
+                val bitcoinEuro =
+                    snapshot.market.bitcoinPrice(
+                        "eur",
+                    )
+                val bitcoinTarget =
+                    snapshot.market.bitcoinPrice(
+                        currency,
+                    )
+
+                if (
+                    bitcoinEuro <= 0.0 ||
+                    bitcoinTarget <= 0.0
+                ) {
+                    0.0
+                } else {
+                    priceEuro *
+                        bitcoinTarget /
+                        bitcoinEuro
+                }
+            }
         }
     }
 
@@ -98,16 +152,24 @@ object WidgetPriceFormatter {
         product: WidgetProductSnapshot,
         snapshot: WidgetDataSnapshot,
     ): Double {
-        if (snapshot.market.btcEur <= 0.0) {
+        val bitcoinEuro =
+            snapshot.market.bitcoinPrice("eur")
+
+        if (bitcoinEuro <= 0.0) {
             return 0.0
         }
 
-        return productPriceEuro(product, snapshot.market) /
-            snapshot.market.btcEur *
+        return productPriceEuro(
+            product,
+            snapshot.market,
+        ) /
+            bitcoinEuro *
             SATS_PER_BITCOIN
     }
 
-    private fun groupInteger(value: Long): String {
+    private fun groupInteger(
+        value: Long,
+    ): String {
         return value.toString().replace(
             Regex("(\\d)(?=(\\d{3})+(?!\\d))"),
             "\$1 ",
@@ -120,17 +182,21 @@ object WidgetPriceFormatter {
         text: String,
         colorEverythingWhenNoDigit: Boolean,
     ): CharSequence {
-        val orange = context.resources.getColor(
-            R.color.widget_accent,
-        )
+        val orange =
+            context.resources.getColor(
+                R.color.widget_accent,
+            )
         val spannable = SpannableString(text)
 
-        val firstSignificantIndex = text.indexOfFirst {
-            it in '1'..'9'
-        }
+        val firstSignificantIndex =
+            text.indexOfFirst {
+                it in '1'..'9'
+            }
 
         val start = when {
-            firstSignificantIndex >= 0 -> firstSignificantIndex
+            firstSignificantIndex >= 0 ->
+                firstSignificantIndex
+
             colorEverythingWhenNoDigit -> 0
             else -> text.length
         }

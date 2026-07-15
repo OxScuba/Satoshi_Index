@@ -1,3 +1,4 @@
+
 package com.example.satoshi_index.widgets
 
 import android.content.Context
@@ -10,10 +11,10 @@ import java.net.URL
 
 object ProductWidgetRepository {
     private const val TAG = "SatoshiWidget"
-    private const val SNAPSHOT_FILE = "satoshi_widget_data.json"
-    private const val PRICE_URL =
-        "https://api.coingecko.com/api/v3/simple/price" +
-            "?ids=bitcoin,ethereum&vs_currencies=eur,usd"
+    private const val SNAPSHOT_FILE =
+        "satoshi_widget_data.json"
+    private const val PRICE_BASE_URL =
+        "https://api.coingecko.com/api/v3/simple/price"
 
     private val lock = Any()
 
@@ -25,7 +26,9 @@ object ProductWidgetRepository {
         writeAtomically(context, rawJson)
     }
 
-    fun readSnapshot(context: Context): WidgetDataSnapshot? {
+    fun readSnapshot(
+        context: Context,
+    ): WidgetDataSnapshot? {
         synchronized(lock) {
             val file = snapshotFile(context)
 
@@ -34,15 +37,23 @@ object ProductWidgetRepository {
             }
 
             return try {
-                parseSnapshot(JSONObject(file.readText()))
+                parseSnapshot(
+                    JSONObject(file.readText()),
+                )
             } catch (error: Exception) {
-                Log.e(TAG, "Lecture du snapshot widget impossible", error)
+                Log.e(
+                    TAG,
+                    "Lecture du snapshot widget impossible",
+                    error,
+                )
                 null
             }
         }
     }
 
-    fun readSnapshotOrFallback(context: Context): WidgetDataSnapshot {
+    fun readSnapshotOrFallback(
+        context: Context,
+    ): WidgetDataSnapshot {
         return readSnapshot(context)
             ?: ProductWidgetCatalog.fallbackSnapshot()
     }
@@ -50,7 +61,8 @@ object ProductWidgetRepository {
     fun readProductsForConfiguration(
         context: Context,
     ): List<WidgetProductSnapshot> {
-        val products = readSnapshot(context)?.products.orEmpty()
+        val products =
+            readSnapshot(context)?.products.orEmpty()
 
         return if (products.isNotEmpty()) {
             products
@@ -59,11 +71,28 @@ object ProductWidgetRepository {
         }
     }
 
-    fun refreshMarketPrices(context: Context): WidgetDataSnapshot {
-        val oldSnapshot = readSnapshotOrFallback(context)
+    fun refreshMarketPrices(
+        context: Context,
+    ): WidgetDataSnapshot {
+        val oldSnapshot =
+            readSnapshotOrFallback(context)
+        val refreshedMarket =
+            fetchMarketPrices(oldSnapshot.currency)
+
         val refreshed = oldSnapshot.copy(
+            schemaVersion = 2,
+            currency = WidgetCurrencyCatalog.normalize(
+                oldSnapshot.currency,
+            ),
             updatedAt = System.currentTimeMillis(),
-            market = fetchMarketPrices(),
+            market = WidgetMarketSnapshot(
+                bitcoinPrices =
+                    oldSnapshot.market.bitcoinPrices +
+                        refreshedMarket.bitcoinPrices,
+                ethereumPrices =
+                    oldSnapshot.market.ethereumPrices +
+                        refreshedMarket.ethereumPrices,
+            ),
         )
 
         writeAtomically(
@@ -74,17 +103,35 @@ object ProductWidgetRepository {
         return refreshed
     }
 
-    private fun fetchMarketPrices(): WidgetMarketSnapshot {
+    private fun fetchMarketPrices(
+        currency: String,
+    ): WidgetMarketSnapshot {
+        val selectedCurrency =
+            WidgetCurrencyCatalog.normalize(currency)
+
+        val requestedCurrencies = linkedSetOf(
+            "eur",
+            selectedCurrency,
+        ).joinToString(",")
+
+        val url =
+            "$PRICE_BASE_URL" +
+                "?ids=bitcoin,ethereum" +
+                "&vs_currencies=$requestedCurrencies"
+
         val connection = (
-            URL(PRICE_URL).openConnection() as HttpURLConnection
+            URL(url).openConnection() as HttpURLConnection
         ).apply {
             requestMethod = "GET"
             connectTimeout = 10_000
             readTimeout = 10_000
-            setRequestProperty("Accept", "application/json")
+            setRequestProperty(
+                "Accept",
+                "application/json",
+            )
             setRequestProperty(
                 "User-Agent",
-                "SatoshiIndex-Android-Widget/1.0",
+                "SatoshiIndex-Android-Widget/2.0",
             )
         }
 
@@ -103,33 +150,73 @@ object ProductWidgetRepository {
                     .use { it.readText() },
             )
 
-            val bitcoin = root.getJSONObject("bitcoin")
-            val ethereum = root.getJSONObject("ethereum")
+            val bitcoin =
+                root.getJSONObject("bitcoin")
+            val ethereum =
+                root.getJSONObject("ethereum")
 
-            val market = WidgetMarketSnapshot(
-                btcEur = bitcoin.getDouble("eur"),
-                btcUsd = bitcoin.getDouble("usd"),
-                ethEur = ethereum.getDouble("eur"),
-                ethUsd = ethereum.getDouble("usd"),
-            )
+            val bitcoinPrices =
+                readRequestedPrices(
+                    bitcoin,
+                    requestedCurrencies,
+                )
+            val ethereumPrices =
+                readRequestedPrices(
+                    ethereum,
+                    requestedCurrencies,
+                )
 
             require(
-                market.btcEur > 0.0 &&
-                    market.btcUsd > 0.0 &&
-                    market.ethEur > 0.0 &&
-                    market.ethUsd > 0.0,
+                bitcoinPrices["eur"] != null &&
+                    bitcoinPrices["eur"]!! > 0.0 &&
+                    ethereumPrices["eur"] != null &&
+                    ethereumPrices["eur"]!! > 0.0 &&
+                    bitcoinPrices[selectedCurrency] != null &&
+                    bitcoinPrices[selectedCurrency]!! > 0.0 &&
+                    ethereumPrices[selectedCurrency] != null &&
+                    ethereumPrices[selectedCurrency]!! > 0.0,
             ) {
                 "Cours CoinGecko invalide"
             }
 
-            return market
+            return WidgetMarketSnapshot(
+                bitcoinPrices = bitcoinPrices,
+                ethereumPrices = ethereumPrices,
+            )
         } finally {
             connection.disconnect()
         }
     }
 
-    private fun snapshotFile(context: Context): File {
-        return File(context.filesDir, SNAPSHOT_FILE)
+    private fun readRequestedPrices(
+        json: JSONObject,
+        requestedCurrencies: String,
+    ): Map<String, Double> {
+        val result = mutableMapOf<String, Double>()
+
+        requestedCurrencies
+            .split(",")
+            .forEach { code ->
+                val value = json.optDouble(
+                    code,
+                    0.0,
+                )
+
+                if (value > 0.0) {
+                    result[code] = value
+                }
+            }
+
+        return result
+    }
+
+    private fun snapshotFile(
+        context: Context,
+    ): File {
+        return File(
+            context.filesDir,
+            SNAPSHOT_FILE,
+        )
     }
 
     private fun writeAtomically(
@@ -152,17 +239,64 @@ object ProductWidgetRepository {
         }
     }
 
-    private fun parseSnapshot(root: JSONObject): WidgetDataSnapshot {
-        val marketJson = root.optJSONObject("market") ?: JSONObject()
-        val productsJson = root.optJSONArray("products") ?: JSONArray()
+    private fun parseSnapshot(
+        root: JSONObject,
+    ): WidgetDataSnapshot {
+        val marketJson =
+            root.optJSONObject("market") ?: JSONObject()
+        val productsJson =
+            root.optJSONArray("products") ?: JSONArray()
+
+        val bitcoinPrices =
+            parsePriceMap(
+                marketJson.optJSONObject("bitcoin"),
+            ).toMutableMap()
+
+        val ethereumPrices =
+            parsePriceMap(
+                marketJson.optJSONObject("ethereum"),
+            ).toMutableMap()
+
+        // Compatibilité avec le snapshot v1 EUR/USD.
+        if (bitcoinPrices.isEmpty()) {
+            addLegacyPrice(
+                bitcoinPrices,
+                "eur",
+                marketJson.optDouble("btcEur", 0.0),
+            )
+            addLegacyPrice(
+                bitcoinPrices,
+                "usd",
+                marketJson.optDouble("btcUsd", 0.0),
+            )
+        }
+
+        if (ethereumPrices.isEmpty()) {
+            addLegacyPrice(
+                ethereumPrices,
+                "eur",
+                marketJson.optDouble("ethEur", 0.0),
+            )
+            addLegacyPrice(
+                ethereumPrices,
+                "usd",
+                marketJson.optDouble("ethUsd", 0.0),
+            )
+        }
 
         val products = buildList {
-            for (index in 0 until productsJson.length()) {
-                val product = productsJson.getJSONObject(index)
+            for (
+                index in 0 until productsJson.length()
+            ) {
+                val product =
+                    productsJson.getJSONObject(index)
 
-                val id = product.optString("id").trim()
-                val name = product.optString("name").trim()
-                val emoji = product.optString("emoji").trim()
+                val id =
+                    product.optString("id").trim()
+                val name =
+                    product.optString("name").trim()
+                val emoji =
+                    product.optString("emoji").trim()
 
                 if (id.isEmpty() || name.isEmpty()) {
                     continue
@@ -173,11 +307,16 @@ object ProductWidgetRepository {
                         id = id,
                         name = name,
                         emoji = emoji,
-                        priceEuro = product.optDouble("priceEuro", 0.0),
+                        priceEuro =
+                            product.optDouble(
+                                "priceEuro",
+                                0.0,
+                            ),
                         liveAsset = product
                             .optString("liveAsset")
                             .takeIf {
-                                it.isNotBlank() && it != "null"
+                                it.isNotBlank() &&
+                                    it != "null"
                             },
                     ),
                 )
@@ -185,17 +324,21 @@ object ProductWidgetRepository {
         }
 
         return WidgetDataSnapshot(
-            schemaVersion = root.optInt("schemaVersion", 1),
-            currency = root.optString("currency", "eur").let {
-                if (it == "usd") "usd" else "eur"
-            },
-            showSats = root.optBoolean("showSats", false),
-            updatedAt = root.optLong("updatedAt", 0L),
+            schemaVersion =
+                root.optInt("schemaVersion", 1),
+            currency = WidgetCurrencyCatalog.normalize(
+                root.optString(
+                    "currency",
+                    "eur",
+                ),
+            ),
+            showSats =
+                root.optBoolean("showSats", false),
+            updatedAt =
+                root.optLong("updatedAt", 0L),
             market = WidgetMarketSnapshot(
-                btcEur = marketJson.optDouble("btcEur", 0.0),
-                btcUsd = marketJson.optDouble("btcUsd", 0.0),
-                ethEur = marketJson.optDouble("ethEur", 0.0),
-                ethUsd = marketJson.optDouble("ethUsd", 0.0),
+                bitcoinPrices = bitcoinPrices,
+                ethereumPrices = ethereumPrices,
             ),
             products = if (products.isNotEmpty()) {
                 products
@@ -205,44 +348,133 @@ object ProductWidgetRepository {
         )
     }
 
+    private fun parsePriceMap(
+        json: JSONObject?,
+    ): Map<String, Double> {
+        if (json == null) {
+            return emptyMap()
+        }
+
+        val result = mutableMapOf<String, Double>()
+        val keys = json.keys()
+
+        while (keys.hasNext()) {
+            val rawCode = keys.next()
+            val code =
+                WidgetCurrencyCatalog.normalize(rawCode)
+
+            if (
+                rawCode.lowercase() != code ||
+                !WidgetCurrencyCatalog
+                    .supportedCodes
+                    .contains(code)
+            ) {
+                continue
+            }
+
+            val value =
+                json.optDouble(rawCode, 0.0)
+
+            if (value > 0.0) {
+                result[code] = value
+            }
+        }
+
+        return result
+    }
+
+    private fun addLegacyPrice(
+        prices: MutableMap<String, Double>,
+        code: String,
+        value: Double,
+    ) {
+        if (value > 0.0) {
+            prices[code] = value
+        }
+    }
+
     private fun snapshotToJson(
         snapshot: WidgetDataSnapshot,
     ): JSONObject {
         return JSONObject().apply {
-            put("schemaVersion", snapshot.schemaVersion)
-            put("currency", snapshot.currency)
+            put("schemaVersion", 2)
+            put(
+                "currency",
+                WidgetCurrencyCatalog.normalize(
+                    snapshot.currency,
+                ),
+            )
             put("showSats", snapshot.showSats)
             put("updatedAt", snapshot.updatedAt)
 
             put(
                 "market",
                 JSONObject().apply {
-                    put("btcEur", snapshot.market.btcEur)
-                    put("btcUsd", snapshot.market.btcUsd)
-                    put("ethEur", snapshot.market.ethEur)
-                    put("ethUsd", snapshot.market.ethUsd)
+                    put(
+                        "bitcoin",
+                        priceMapToJson(
+                            snapshot.market
+                                .bitcoinPrices,
+                        ),
+                    )
+                    put(
+                        "ethereum",
+                        priceMapToJson(
+                            snapshot.market
+                                .ethereumPrices,
+                        ),
+                    )
                 },
             )
 
             put(
                 "products",
                 JSONArray().apply {
-                    snapshot.products.forEach { product ->
+                    snapshot.products.forEach {
+                            product ->
                         put(
                             JSONObject().apply {
                                 put("id", product.id)
-                                put("name", product.name)
-                                put("emoji", product.emoji)
-                                put("priceEuro", product.priceEuro)
+                                put(
+                                    "name",
+                                    product.name,
+                                )
+                                put(
+                                    "emoji",
+                                    product.emoji,
+                                )
+                                put(
+                                    "priceEuro",
+                                    product.priceEuro,
+                                )
                                 put(
                                     "liveAsset",
-                                    product.liveAsset ?: JSONObject.NULL,
+                                    product.liveAsset
+                                        ?: JSONObject.NULL,
                                 )
                             },
                         )
                     }
                 },
             )
+        }
+    }
+
+    private fun priceMapToJson(
+        prices: Map<String, Double>,
+    ): JSONObject {
+        return JSONObject().apply {
+            prices.forEach {
+                    (code, value) ->
+                if (
+                    WidgetCurrencyCatalog
+                        .supportedCodes
+                        .contains(code) &&
+                    value > 0.0
+                ) {
+                    put(code, value)
+                }
+            }
         }
     }
 }

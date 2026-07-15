@@ -1,11 +1,28 @@
+
 package com.example.satoshi_index.widgets
 
 data class WidgetMarketSnapshot(
-    val btcEur: Double,
-    val btcUsd: Double,
-    val ethEur: Double,
-    val ethUsd: Double,
-)
+    val bitcoinPrices: Map<String, Double>,
+    val ethereumPrices: Map<String, Double>,
+) {
+    fun bitcoinPrice(currency: String): Double {
+        return bitcoinPrices[
+            WidgetCurrencyCatalog.normalize(currency)
+        ] ?: 0.0
+    }
+
+    fun ethereumPrice(currency: String): Double {
+        return ethereumPrices[
+            WidgetCurrencyCatalog.normalize(currency)
+        ] ?: 0.0
+    }
+
+    val btcEur: Double
+        get() = bitcoinPrice("eur")
+
+    val ethEur: Double
+        get() = ethereumPrice("eur")
+}
 
 data class WidgetProductSnapshot(
     val id: String,

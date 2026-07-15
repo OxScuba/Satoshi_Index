@@ -8,10 +8,7 @@ import '../services/product_price_resolver.dart';
 class CustomPricesPage extends StatefulWidget {
   final List<Product> products;
 
-  const CustomPricesPage({
-    super.key,
-    required this.products,
-  });
+  const CustomPricesPage({super.key, required this.products});
 
   @override
   State<CustomPricesPage> createState() => _CustomPricesPageState();
@@ -173,9 +170,7 @@ class _CustomPricesPageState extends State<CustomPricesPage> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text(
-          'Tous les prix personnalisés ont été supprimés.',
-        ),
+        content: Text('Tous les prix personnalisés ont été supprimés.'),
       ),
     );
   }
@@ -196,23 +191,17 @@ class _CustomPricesPageState extends State<CustomPricesPage> {
 
   Widget _buildProductCard(Product product) {
     final controller = _controllers[product.id]!;
-    final referencePrice =
-        ProductPriceResolver.referencePriceEuro(product);
+    final referencePrice = ProductPriceResolver.referencePriceEuro(product);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              product.emoji,
-              style: const TextStyle(fontSize: 30),
-            ),
+            Text(product.emoji, style: const TextStyle(fontSize: 30)),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
@@ -238,9 +227,7 @@ class _CustomPricesPageState extends State<CustomPricesPage> {
                       decimal: true,
                     ),
                     inputFormatters: [
-                      FilteringTextInputFormatter.allow(
-                        RegExp(r'[0-9.,\s]'),
-                      ),
+                      FilteringTextInputFormatter.allow(RegExp(r'[0-9.,\s]')),
                     ],
                     validator: _validatePrice,
                     decoration: InputDecoration(
@@ -278,71 +265,65 @@ class _CustomPricesPageState extends State<CustomPricesPage> {
         actions: [
           IconButton(
             tooltip: 'Tout réinitialiser',
-            onPressed: _isLoading || _isSaving
-                ? null
-                : _resetAllPrices,
+            onPressed: _isLoading || _isSaving ? null : _resetAllPrices,
             icon: const Icon(Icons.delete_sweep_outlined),
           ),
         ],
       ),
-      body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(
-                color: Colors.orange,
-              ),
-            )
-          : Form(
-              key: _formKey,
-              child: ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  Card(
-                    elevation: 0,
-                    color: Colors.orange.withValues(alpha: 0.10),
-                    child: const Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Text(
-                        'Indique le prix que tu paies réellement. '
-                        'Ces valeurs sont enregistrées en euros et '
-                        'seront utilisées sur l’accueil, dans les '
-                        'outils et dans les widgets. Les fiches et '
-                        'graphiques historiques restent inchangés.\n\n'
-                        'Laisse un champ vide pour utiliser le dernier '
-                        'prix trimestriel de référence.',
+      body:
+          _isLoading
+              ? const Center(
+                child: CircularProgressIndicator(color: Colors.orange),
+              )
+              : Form(
+                key: _formKey,
+                child: ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    Card(
+                      elevation: 0,
+                      color: Colors.orange.withValues(alpha: 0.10),
+                      child: const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Text(
+                          'Indique le prix que tu paies réellement. '
+                          'Ces valeurs sont enregistrées en euros et '
+                          'seront utilisées sur l’accueil, dans les '
+                          'outils et dans les widgets. Les fiches et '
+                          'graphiques historiques restent inchangés.\n\n'
+                          'Laisse un champ vide pour utiliser le dernier '
+                          'prix trimestriel de référence.',
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 14),
-                  ..._customizableProducts.map(_buildProductCard),
-                  const SizedBox(height: 6),
-                  FilledButton.icon(
-                    onPressed: _isSaving ? null : _savePrices,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: Colors.orange,
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 15,
+                    const SizedBox(height: 14),
+                    ..._customizableProducts.map(_buildProductCard),
+                    const SizedBox(height: 6),
+                    FilledButton.icon(
+                      onPressed: _isSaving ? null : _savePrices,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: Colors.orange,
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                      ),
+                      icon:
+                          _isSaving
+                              ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                              : const Icon(Icons.save),
+                      label: Text(
+                        _isSaving ? 'Enregistrement…' : 'Enregistrer les prix',
                       ),
                     ),
-                    icon: _isSaving
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Icon(Icons.save),
-                    label: Text(
-                      _isSaving
-                          ? 'Enregistrement…'
-                          : 'Enregistrer les prix',
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                ],
+                    const SizedBox(height: 20),
+                  ],
+                ),
               ),
-            ),
     );
   }
 }

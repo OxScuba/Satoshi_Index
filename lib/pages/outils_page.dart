@@ -5,12 +5,7 @@ import '../models/market_prices.dart';
 import '../models/product.dart';
 import '../services/product_price_resolver.dart';
 
-enum _ConversionUnit {
-  sats,
-  btc,
-  eur,
-  usd,
-}
+enum _ConversionUnit { sats, btc, eur, secondary }
 
 /// Colore uniquement les chiffres significatifs en orange.
 ///
@@ -28,18 +23,13 @@ class _SignificantDigitsController extends TextEditingController {
     final firstSignificantIndex = value.indexOf(RegExp(r'[1-9]'));
 
     if (value.isEmpty || firstSignificantIndex == -1) {
-      return TextSpan(
-        text: value,
-        style: style,
-      );
+      return TextSpan(text: value, style: style);
     }
 
     return TextSpan(
       style: style,
       children: [
-        TextSpan(
-          text: value.substring(0, firstSignificantIndex),
-        ),
+        TextSpan(text: value.substring(0, firstSignificantIndex)),
         TextSpan(
           text: value.substring(firstSignificantIndex),
           style: style?.copyWith(
@@ -56,6 +46,7 @@ class OutilsPage extends StatefulWidget {
   final List<Product> products;
   final MarketPrices marketPrices;
   final Map<String, double> customPrices;
+  final AppCurrency selectedCurrency;
   final bool isDark;
 
   const OutilsPage({
@@ -63,6 +54,7 @@ class OutilsPage extends StatefulWidget {
     required this.products,
     required this.marketPrices,
     required this.customPrices,
+    required this.selectedCurrency,
     required this.isDark,
   });
 
@@ -79,6 +71,10 @@ class _OutilsPageState extends State<OutilsPage> {
 
   _ConversionUnit? _activeUnit;
   double _btcValue = 0;
+
+  AppCurrency get _secondaryCurrency {
+    return widget.selectedCurrency.toolsSecondaryCurrency;
+  }
 
   @override
   void initState() {
@@ -136,17 +132,14 @@ class _OutilsPageState extends State<OutilsPage> {
     return value;
   }
 
-  void _convertFrom(
-    _ConversionUnit source,
-    String raw,
-  ) {
+  void _convertFrom(_ConversionUnit source, String raw) {
     final value = _parseNumber(raw);
 
     setState(() {
       _activeUnit = source;
     });
 
-    if (raw.trim().isEmpty) {
+    if (raw.trim().isEmpty || value == null) {
       _clearOtherFields(source);
 
       setState(() {
@@ -156,21 +149,17 @@ class _OutilsPageState extends State<OutilsPage> {
       return;
     }
 
-    if (value == null) {
-      _clearOtherFields(source);
+    final bitcoinEuro = widget.marketPrices.bitcoinPrice(AppCurrency.eur);
+    final bitcoinSecondary = widget.marketPrices.bitcoinPrice(
+      _secondaryCurrency,
+    );
 
-      setState(() {
-        _btcValue = 0;
-      });
-
-      return;
-    }
-
-    final btc = switch (source) {
+    final double btc = switch (source) {
       _ConversionUnit.sats => value / _satsPerBitcoin,
       _ConversionUnit.btc => value,
-      _ConversionUnit.eur => value / widget.marketPrices.btcEur,
-      _ConversionUnit.usd => value / widget.marketPrices.btcUsd,
+      _ConversionUnit.eur => bitcoinEuro <= 0 ? 0.0 : value / bitcoinEuro,
+      _ConversionUnit.secondary =>
+        bitcoinSecondary <= 0 ? 0.0 : value / bitcoinSecondary,
     };
 
     setState(() {
@@ -180,8 +169,8 @@ class _OutilsPageState extends State<OutilsPage> {
     final calculated = <_ConversionUnit, double>{
       _ConversionUnit.sats: btc * _satsPerBitcoin,
       _ConversionUnit.btc: btc,
-      _ConversionUnit.eur: btc * widget.marketPrices.btcEur,
-      _ConversionUnit.usd: btc * widget.marketPrices.btcUsd,
+      _ConversionUnit.eur: btc * bitcoinEuro,
+      _ConversionUnit.secondary: btc * bitcoinSecondary,
     };
 
     for (final entry in calculated.entries) {
@@ -189,10 +178,7 @@ class _OutilsPageState extends State<OutilsPage> {
         continue;
       }
 
-      _setControllerText(
-        entry.key,
-        _formatValue(entry.key, entry.value),
-      );
+      _setControllerText(entry.key, _formatValue(entry.key, entry.value));
     }
   }
 
@@ -204,10 +190,7 @@ class _OutilsPageState extends State<OutilsPage> {
       return;
     }
 
-    _setControllerText(
-      unit,
-      _formatValue(unit, value),
-    );
+    _setControllerText(unit, _formatValue(unit, value));
   }
 
   void _clearOtherFields(_ConversionUnit source) {
@@ -231,24 +214,16 @@ class _OutilsPageState extends State<OutilsPage> {
     });
   }
 
-  void _setControllerText(
-    _ConversionUnit unit,
-    String value,
-  ) {
+  void _setControllerText(_ConversionUnit unit, String value) {
     final controller = _controllers[unit]!;
 
     controller.value = TextEditingValue(
       text: value,
-      selection: TextSelection.collapsed(
-        offset: value.length,
-      ),
+      selection: TextSelection.collapsed(offset: value.length),
     );
   }
 
-  String _formatValue(
-    _ConversionUnit unit,
-    double value,
-  ) {
+  String _formatValue(_ConversionUnit unit, double value) {
     switch (unit) {
       case _ConversionUnit.sats:
         return _groupInteger(value.round());
@@ -257,8 +232,10 @@ class _OutilsPageState extends State<OutilsPage> {
         return _groupBitcoin(value);
 
       case _ConversionUnit.eur:
-      case _ConversionUnit.usd:
-        return _groupFiat(value);
+        return _groupFiat(value, AppCurrency.eur);
+
+      case _ConversionUnit.secondary:
+        return _groupFiat(value, _secondaryCurrency);
     }
   }
 
@@ -282,11 +259,14 @@ class _OutilsPageState extends State<OutilsPage> {
         '${decimals.substring(5, 8)}';
   }
 
-  String _groupFiat(double value) {
-    final fixed = value.toStringAsFixed(2);
+  String _groupFiat(double value, AppCurrency currency) {
+    final fixed = value.toStringAsFixed(currency.fractionDigits);
     final parts = fixed.split('.');
-
     final integerPart = _groupInteger(int.parse(parts[0]));
+
+    if (currency.fractionDigits == 0) {
+      return integerPart;
+    }
 
     return '$integerPart.${parts[1]}';
   }
@@ -323,9 +303,7 @@ class _OutilsPageState extends State<OutilsPage> {
         style: TextStyle(
           fontSize: 18,
           color: textColor,
-          fontFeatures: const [
-            FontFeature.tabularFigures(),
-          ],
+          fontFeatures: const [FontFeature.tabularFigures()],
         ),
         textAlign: TextAlign.right,
         onTap: () {
@@ -338,10 +316,7 @@ class _OutilsPageState extends State<OutilsPage> {
         },
         decoration: InputDecoration(
           labelText: label,
-          prefixIcon: Icon(
-            icon,
-            color: isActive ? Colors.orange : null,
-          ),
+          prefixIcon: Icon(icon, color: isActive ? Colors.orange : null),
           suffixText: suffix,
           suffixStyle: const TextStyle(
             color: Colors.orange,
@@ -349,18 +324,11 @@ class _OutilsPageState extends State<OutilsPage> {
             fontSize: 16,
           ),
           filled: isActive,
-          fillColor: isActive
-              ? Colors.orange.withOpacity(0.08)
-              : null,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
+          fillColor: isActive ? Colors.orange.withValues(alpha: 0.08) : null,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
-            borderSide: const BorderSide(
-              color: Colors.orange,
-              width: 2,
-            ),
+            borderSide: const BorderSide(color: Colors.orange, width: 2),
           ),
         ),
       ),
@@ -369,15 +337,12 @@ class _OutilsPageState extends State<OutilsPage> {
 
   Widget _buildBitcoinPriceHeader() {
     final textColor = widget.isDark ? Colors.white : Colors.black;
+    final secondary = _secondaryCurrency;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Image.asset(
-          'lib/assets/images/bitcoin.png',
-          height: 24,
-          width: 24,
-        ),
+        Image.asset('lib/assets/images/bitcoin.png', height: 24, width: 24),
         const SizedBox(width: 8),
         Flexible(
           child: RichText(
@@ -391,29 +356,24 @@ class _OutilsPageState extends State<OutilsPage> {
               children: [
                 const TextSpan(text: '1 BTC = '),
                 TextSpan(
-                  text: _groupFiat(widget.marketPrices.btcEur),
-                  style: const TextStyle(
-                    color: Colors.orange,
-                  ),
+                  text: _groupFiat(widget.marketPrices.btcEur, AppCurrency.eur),
+                  style: const TextStyle(color: Colors.orange),
                 ),
                 const TextSpan(
                   text: ' €',
-                  style: TextStyle(
-                    color: Colors.orange,
-                  ),
+                  style: TextStyle(color: Colors.orange),
                 ),
                 const TextSpan(text: '  •  '),
                 TextSpan(
-                  text: _groupFiat(widget.marketPrices.btcUsd),
-                  style: const TextStyle(
-                    color: Colors.orange,
+                  text: _groupFiat(
+                    widget.marketPrices.bitcoinPrice(secondary),
+                    secondary,
                   ),
+                  style: const TextStyle(color: Colors.orange),
                 ),
-                const TextSpan(
-                  text: ' \$',
-                  style: TextStyle(
-                    color: Colors.orange,
-                  ),
+                TextSpan(
+                  text: ' ${secondary.symbol}',
+                  style: const TextStyle(color: Colors.orange),
                 ),
               ],
             ),
@@ -430,22 +390,21 @@ class _OutilsPageState extends State<OutilsPage> {
 
     final euroValue = _btcValue * widget.marketPrices.btcEur;
 
-    final itemPriceEuro =
-        ProductPriceResolver.effectivePriceEuro(
+    final itemPriceEuro = ProductPriceResolver.effectivePriceEuro(
       product: selectedProduct,
       customPrices: widget.customPrices,
       marketPrices: widget.marketPrices,
     );
 
-    final hasCustomPrice =
-        ProductPriceResolver.hasCustomPrice(
+    final hasCustomPrice = ProductPriceResolver.hasCustomPrice(
       selectedProduct,
       widget.customPrices,
     );
 
-    final priceLabel = selectedProduct.liveMarketAsset != null
-        ? 'Prix unitaire en direct'
-        : hasCustomPrice
+    final priceLabel =
+        selectedProduct.liveMarketAsset != null
+            ? 'Prix unitaire en direct'
+            : hasCustomPrice
             ? 'Prix unitaire personnalisé'
             : 'Prix unitaire de référence';
 
@@ -489,9 +448,7 @@ class _OutilsPageState extends State<OutilsPage> {
                     text:
                         ' × ${selectedProduct.emoji} '
                         '${selectedProduct.name}',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
@@ -504,11 +461,9 @@ class _OutilsPageState extends State<OutilsPage> {
                   color: widget.isDark ? Colors.white70 : Colors.black54,
                 ),
                 children: [
+                  TextSpan(text: '$priceLabel : '),
                   TextSpan(
-                    text: '$priceLabel : ',
-                  ),
-                  TextSpan(
-                    text: _groupFiat(itemPriceEuro),
+                    text: _groupFiat(itemPriceEuro, AppCurrency.eur),
                     style: const TextStyle(
                       color: Colors.orange,
                       fontWeight: FontWeight.bold,
@@ -532,33 +487,40 @@ class _OutilsPageState extends State<OutilsPage> {
 
   Widget _buildExchangeRateFooter() {
     final textColor = widget.isDark ? Colors.white70 : Colors.black54;
+    final secondary = _secondaryCurrency;
+
+    final euroToSecondary = widget.marketPrices.conversionRate(
+      from: AppCurrency.eur,
+      to: secondary,
+    );
+    final secondaryToEuro = widget.marketPrices.conversionRate(
+      from: secondary,
+      to: AppCurrency.eur,
+    );
 
     return RichText(
       textAlign: TextAlign.center,
       text: TextSpan(
-        style: TextStyle(
-          color: textColor,
-          fontSize: 12,
-        ),
+        style: TextStyle(color: textColor, fontSize: 12),
         children: [
           const TextSpan(text: 'Taux croisé : 1 € = '),
           TextSpan(
-            text: widget.marketPrices.eurToUsd.toStringAsFixed(4),
+            text: euroToSecondary.toStringAsFixed(4),
             style: const TextStyle(
               color: Colors.orange,
               fontWeight: FontWeight.bold,
             ),
           ),
-          const TextSpan(
-            text: ' \$',
-            style: TextStyle(
+          TextSpan(
+            text: ' ${secondary.symbol}',
+            style: const TextStyle(
               color: Colors.orange,
               fontWeight: FontWeight.bold,
             ),
           ),
-          const TextSpan(text: '  •  1 \$ = '),
+          TextSpan(text: '  •  1 ${secondary.symbol} = '),
           TextSpan(
-            text: widget.marketPrices.usdToEur.toStringAsFixed(4),
+            text: secondaryToEuro.toStringAsFixed(4),
             style: const TextStyle(
               color: Colors.orange,
               fontWeight: FontWeight.bold,
@@ -566,10 +528,7 @@ class _OutilsPageState extends State<OutilsPage> {
           ),
           const TextSpan(
             text: ' €',
-            style: TextStyle(
-              color: Colors.orange,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold),
           ),
         ],
       ),
@@ -582,6 +541,7 @@ class _OutilsPageState extends State<OutilsPage> {
     final fetchedAt = TimeOfDay.fromDateTime(
       widget.marketPrices.fetchedAt,
     ).format(context);
+    final secondary = _secondaryCurrency;
 
     return Scaffold(
       appBar: AppBar(
@@ -598,12 +558,14 @@ class _OutilsPageState extends State<OutilsPage> {
               const SizedBox(height: 6),
               Text(
                 widget.marketPrices.isFromCache
-                    ? 'Cours hors ligne mis en cache à $fetchedAt'
+                    ? 'Cours hors ligne mis en cache à '
+                        '$fetchedAt'
                     : 'Cours mis à jour à $fetchedAt',
                 style: TextStyle(
-                  color: widget.marketPrices.isFromCache
-                      ? Colors.orange
-                      : Colors.grey,
+                  color:
+                      widget.marketPrices.isFromCache
+                          ? Colors.orange
+                          : Colors.grey,
                   fontSize: 12,
                 ),
               ),
@@ -619,11 +581,10 @@ class _OutilsPageState extends State<OutilsPage> {
               const SizedBox(height: 6),
               Text(
                 'Saisis un montant dans une case : '
-                'les trois autres se calculent immédiatement.',
+                'les trois autres se calculent '
+                'immédiatement.',
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: textColor,
-                ),
+                style: TextStyle(color: textColor),
               ),
               const SizedBox(height: 20),
               _buildField(
@@ -645,10 +606,10 @@ class _OutilsPageState extends State<OutilsPage> {
                 icon: Icons.euro,
               ),
               _buildField(
-                unit: _ConversionUnit.usd,
-                label: 'Dollars américains',
-                suffix: '\$',
-                icon: Icons.attach_money,
+                unit: _ConversionUnit.secondary,
+                label: secondary.label,
+                suffix: secondary.symbol,
+                icon: Icons.currency_exchange,
               ),
               Align(
                 alignment: Alignment.centerRight,
@@ -663,9 +624,7 @@ class _OutilsPageState extends State<OutilsPage> {
                 children: [
                   const Text(
                     'Comparer avec :',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -681,17 +640,19 @@ class _OutilsPageState extends State<OutilsPage> {
                           selectedProduct = product;
                         });
                       },
-                      items: widget.products
-                          .map(
-                            (product) => DropdownMenuItem<Product>(
-                              value: product,
-                              child: Text(
-                                '${product.emoji} ${product.name}',
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          )
-                          .toList(),
+                      items:
+                          widget.products
+                              .map(
+                                (product) => DropdownMenuItem<Product>(
+                                  value: product,
+                                  child: Text(
+                                    '${product.emoji} '
+                                    '${product.name}',
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              )
+                              .toList(),
                     ),
                   ),
                 ],

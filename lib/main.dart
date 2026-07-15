@@ -30,10 +30,7 @@ void main() async {
 class SatoshiIndexApp extends StatefulWidget {
   final bool isDarkMode;
 
-  const SatoshiIndexApp({
-    super.key,
-    required this.isDarkMode,
-  });
+  const SatoshiIndexApp({super.key, required this.isDarkMode});
 
   @override
   State<SatoshiIndexApp> createState() => _SatoshiIndexAppState();
@@ -69,10 +66,7 @@ class _SatoshiIndexAppState extends State<SatoshiIndexApp> {
         ),
       ),
       darkTheme: ThemeData.dark(),
-      home: HomePage(
-        isDarkMode: isDarkMode,
-        onThemeChanged: updateTheme,
-      ),
+      home: HomePage(isDarkMode: isDarkMode, onThemeChanged: updateTheme),
     );
   }
 }
@@ -128,16 +122,13 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
-    final loadedCustomPrices =
-        await CustomPriceService.loadPrices();
+    final loadedCustomPrices = await CustomPriceService.loadPrices();
 
     if (!mounted) return;
 
     setState(() {
       showSats = prefs.getBool('showSats') ?? false;
-      selectedCurrency = appCurrencyFromCode(
-        prefs.getString('currency'),
-      );
+      selectedCurrency = appCurrencyFromCode(prefs.getString('currency'));
       customPrices = loadedCustomPrices;
     });
 
@@ -164,7 +155,6 @@ class _HomePageState extends State<HomePage> {
       });
     }
   }
-
 
   Future<void> _exportAndSyncWidgets() async {
     final prices = marketPrices;
@@ -206,18 +196,16 @@ class _HomePageState extends State<HomePage> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             IconButton(
-              icon: const Icon(
-                Icons.settings,
-                color: Colors.orange,
-              ),
+              icon: const Icon(Icons.settings, color: Colors.orange),
               onPressed: () async {
                 await Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => SettingsPage(
-                      onThemeChanged: widget.onThemeChanged,
-                      products: products,
-                    ),
+                    builder:
+                        (_) => SettingsPage(
+                          onThemeChanged: widget.onThemeChanged,
+                          products: products,
+                        ),
                   ),
                 );
 
@@ -232,9 +220,7 @@ class _HomePageState extends State<HomePage> {
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(
-                          builder: (_) => const LogoPage(),
-                        ),
+                        MaterialPageRoute(builder: (_) => const LogoPage()),
                       );
                     },
                     child: Image.asset(
@@ -263,9 +249,7 @@ class _HomePageState extends State<HomePage> {
 
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
-                      builder: (_) => const TradingChartPage(),
-                    ),
+                    MaterialPageRoute(builder: (_) => const TradingChartPage()),
                   );
                 },
                 child: Row(
@@ -278,11 +262,8 @@ class _HomePageState extends State<HomePage> {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      '= ${_formatFiat(bitcoinPrice)} $currencySymbol',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: textColor,
-                      ),
+                      '= ${_formatFiat(bitcoinPrice, selectedCurrency)} $currencySymbol',
+                      style: TextStyle(fontSize: 14, color: textColor),
                     ),
                   ],
                 ),
@@ -290,237 +271,218 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
       ),
-      body: prices == null
-          ? Center(
-              child: marketPriceError == null
-                  ? const CircularProgressIndicator()
-                  : Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.cloud_off,
-                            size: 42,
-                            color: Colors.orange,
-                          ),
-                          const SizedBox(height: 12),
-                          const Text(
-                            'Impossible de charger le cours du Bitcoin.',
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            marketPriceError!,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              color: Colors.grey,
-                              fontSize: 12,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          ElevatedButton.icon(
-                            onPressed: fetchMarketPrices,
-                            icon: const Icon(Icons.refresh),
-                            label: const Text('Réessayer'),
-                          ),
-                        ],
-                      ),
-                    ),
-            )
-          : Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: products.length,
-                      itemBuilder: (context, index) {
-                        final item = products[index];
-
-                        final effectivePriceEuro =
-                            ProductPriceResolver.effectivePriceEuro(
-                          product: item,
-                          customPrices: customPrices,
-                          marketPrices: prices,
-                        );
-
-                        final hasCustomPrice =
-                            ProductPriceResolver.hasCustomPrice(
-                          item,
-                          customPrices,
-                        );
-
-                        final displayedPrice = prices.convertEuro(
-                          effectivePriceEuro,
-                          selectedCurrency,
-                        );
-
-                        final displayedBitcoinPrice = prices.bitcoinPrice(
-                          selectedCurrency,
-                        );
-
-                        final sats =
-                            ((displayedPrice / displayedBitcoinPrice) *
-                                    100000000)
-                                .round();
-
-                        final formatted = showSats
-                            ? formatSatsOnly(sats, isDark)
-                            : formatSatsDisplay(sats, isDark);
-
-                        return Card(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(15),
-                          ),
-                          margin: const EdgeInsets.symmetric(vertical: 8),
-                          child: ListTile(
-                            leading: Text(
-                              item.emoji,
-                              style: const TextStyle(fontSize: 28),
-                            ),
-                            title: formatted,
-                            subtitle: Text.rich(
-                              TextSpan(
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium,
-                                children: [
-                                  TextSpan(
-                                    text:
-                                        '${_formatFiat(displayedPrice)} '
-                                        '$currencySymbol',
-                                  ),
-                                  if (hasCustomPrice)
-                                    const TextSpan(
-                                      text: ' · personnalisé',
-                                      style: TextStyle(
-                                        color: Colors.orange,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                ],
+      body:
+          prices == null
+              ? Center(
+                child:
+                    marketPriceError == null
+                        ? const CircularProgressIndicator()
+                        : Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.cloud_off,
+                                size: 42,
+                                color: Colors.orange,
                               ),
-                            ),
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => ProductDetailPage(
-                                    product: item,
-                                  ),
+                              const SizedBox(height: 12),
+                              const Text(
+                                'Impossible de charger le cours du Bitcoin.',
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                marketPriceError!,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  color: Colors.grey,
+                                  fontSize: 12,
                                 ),
-                              );
-                            },
+                              ),
+                              const SizedBox(height: 16),
+                              ElevatedButton.icon(
+                                onPressed: fetchMarketPrices,
+                                icon: const Icon(Icons.refresh),
+                                label: const Text('Réessayer'),
+                              ),
+                            ],
                           ),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _buildNavButton(
-                        Icons.build,
-                        'Outils',
-                        OutilsPage(
-                          products: products,
-                          marketPrices: prices,
-                          customPrices: customPrices,
-                          isDark: isDark,
                         ),
+              )
+              : Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: products.length,
+                        itemBuilder: (context, index) {
+                          final item = products[index];
+
+                          final effectivePriceEuro =
+                              ProductPriceResolver.effectivePriceEuro(
+                                product: item,
+                                customPrices: customPrices,
+                                marketPrices: prices,
+                              );
+
+                          final hasCustomPrice =
+                              ProductPriceResolver.hasCustomPrice(
+                                item,
+                                customPrices,
+                              );
+
+                          final displayedPrice = prices.convertEuro(
+                            effectivePriceEuro,
+                            selectedCurrency,
+                          );
+
+                          final displayedBitcoinPrice = prices.bitcoinPrice(
+                            selectedCurrency,
+                          );
+
+                          final sats =
+                              ((displayedPrice / displayedBitcoinPrice) *
+                                      100000000)
+                                  .round();
+
+                          final formatted =
+                              showSats
+                                  ? formatSatsOnly(sats, isDark)
+                                  : formatSatsDisplay(sats, isDark);
+
+                          return Card(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(15),
+                            ),
+                            margin: const EdgeInsets.symmetric(vertical: 8),
+                            child: ListTile(
+                              leading: Text(
+                                item.emoji,
+                                style: const TextStyle(fontSize: 28),
+                              ),
+                              title: formatted,
+                              subtitle: Text.rich(
+                                TextSpan(
+                                  style: Theme.of(context).textTheme.bodyMedium,
+                                  children: [
+                                    TextSpan(
+                                      text:
+                                          '${_formatFiat(displayedPrice, selectedCurrency)} '
+                                          '$currencySymbol',
+                                    ),
+                                    if (hasCustomPrice)
+                                      const TextSpan(
+                                        text: ' · personnalisé',
+                                        style: TextStyle(
+                                          color: Colors.orange,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder:
+                                        (_) => ProductDetailPage(product: item),
+                                  ),
+                                );
+                              },
+                            ),
+                          );
+                        },
                       ),
-                      const SizedBox(width: 8),
-                      _buildImageNavButton(
-                        'lib/assets/images/logo_bullbitcoin_2.png',
-                        const BullBitcoinPage(),
-                      ),
-                      const SizedBox(width: 8),
-                      _buildNavButton(
-                        Icons.currency_bitcoin,
-                        'Sat ⇄ BTC',
-                        const SatoshiPage(),
-                      ),
-                    ],
-                  ),
-                ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _buildNavButton(
+                          Icons.build,
+                          'Outils',
+                          OutilsPage(
+                            products: products,
+                            marketPrices: prices,
+                            customPrices: customPrices,
+                            selectedCurrency: selectedCurrency,
+                            isDark: isDark,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        _buildImageNavButton(
+                          'lib/assets/images/logo_bullbitcoin_2.png',
+                          const BullBitcoinPage(),
+                        ),
+                        const SizedBox(width: 8),
+                        _buildNavButton(
+                          Icons.currency_bitcoin,
+                          'Sat ⇄ BTC',
+                          const SatoshiPage(),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
     );
   }
 
-  String _formatFiat(double value) {
-    return value.toStringAsFixed(2).replaceAllMapped(
-          RegExp(r'(\d)(?=(\d{3})+\.)'),
-          (match) => '${match[1]} ',
-        );
+  String _formatFiat(double value, AppCurrency currency) {
+    final fixed = value.toStringAsFixed(currency.fractionDigits);
+    final parts = fixed.split('.');
+    final integerPart = parts[0].replaceAllMapped(
+      RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
+      (match) => '${match[1]} ',
+    );
+
+    if (currency.fractionDigits == 0) {
+      return integerPart;
+    }
+
+    return '$integerPart.${parts[1]}';
   }
 
-  Widget _buildNavButton(
-    IconData icon,
-    String label,
-    Widget page,
-  ) {
+  Widget _buildNavButton(IconData icon, String label, Widget page) {
     return Expanded(
       child: ElevatedButton.icon(
         onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => page),
-          );
+          Navigator.push(context, MaterialPageRoute(builder: (_) => page));
         },
-        icon: Icon(
-          icon,
-          color: Colors.white,
-        ),
+        icon: Icon(icon, color: Colors.white),
         label: Text(label),
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.orange,
-          padding: const EdgeInsets.symmetric(
-            horizontal: 8,
-            vertical: 12,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(30),
           ),
-          textStyle: const TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
+          textStyle: const TextStyle(fontWeight: FontWeight.bold),
         ),
       ),
     );
   }
 
-  Widget _buildImageNavButton(
-    String imagePath,
-    Widget page,
-  ) {
+  Widget _buildImageNavButton(String imagePath, Widget page) {
     return Expanded(
       child: InkWell(
         onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => page),
-          );
+          Navigator.push(context, MaterialPageRoute(builder: (_) => page));
         },
-        child: Image.asset(
-          imagePath,
-          height: 40,
-          fit: BoxFit.contain,
-        ),
+        child: Image.asset(imagePath, height: 40, fit: BoxFit.contain),
       ),
     );
   }
 
-  Widget formatSatsOnly(
-    int sats,
-    bool isDark,
-  ) {
+  Widget formatSatsOnly(int sats, bool isDark) {
     final formatted = sats.toString().replaceAllMapped(
-          RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
-          (match) => '${match[1]} ',
-        );
+      RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
+      (match) => '${match[1]} ',
+    );
 
     return RichText(
       text: TextSpan(
@@ -550,10 +512,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget formatSatsDisplay(
-    int sats,
-    bool isDark,
-  ) {
+  Widget formatSatsDisplay(int sats, bool isDark) {
     final str = (sats / 100000000).toStringAsFixed(8);
     final parts = str.split('.');
     final beforeDecimal = parts[0];

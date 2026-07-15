@@ -43,9 +43,7 @@ class CustomPriceService {
     }
   }
 
-  static Future<void> savePrices(
-    Map<String, double> prices,
-  ) async {
+  static Future<void> savePrices(Map<String, double> prices) async {
     final sanitized = <String, double>{};
 
     for (final entry in prices.entries) {
@@ -64,10 +62,7 @@ class CustomPriceService {
       return;
     }
 
-    await prefs.setString(
-      _storageKey,
-      jsonEncode(sanitized),
-    );
+    await prefs.setString(_storageKey, jsonEncode(sanitized));
   }
 
   static Future<void> clearPrices() async {

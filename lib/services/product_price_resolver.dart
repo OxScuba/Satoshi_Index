@@ -39,10 +39,7 @@ class ProductPriceResolver {
     final liveAsset = product.liveMarketAsset;
 
     if (liveAsset != null) {
-      return marketPrices.liveAssetPrice(
-        liveAsset,
-        AppCurrency.eur,
-      );
+      return marketPrices.liveAssetPrice(liveAsset, AppCurrency.eur);
     }
 
     return customPriceEuro(product, customPrices) ??
