@@ -6,6 +6,7 @@ import '../models/product.dart';
 import 'currency_selection_page.dart';
 import 'custom_prices_page.dart';
 import 'donation_page.dart';
+import 'user_products_page.dart';
 
 class SettingsPage extends StatefulWidget {
   final Function(bool) onThemeChanged;
@@ -152,6 +153,23 @@ class _SettingsPageState extends State<SettingsPage> {
                 context,
                 MaterialPageRoute(
                   builder: (_) => CustomPricesPage(products: widget.products),
+                ),
+              );
+            },
+          ),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.add_shopping_cart, color: Colors.orange),
+            title: const Text('Mes produits'),
+            subtitle: const Text('Ajoutez des produits personnels.'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder:
+                      (_) =>
+                          UserProductsPage(defaultCurrency: selectedCurrency),
                 ),
               );
             },

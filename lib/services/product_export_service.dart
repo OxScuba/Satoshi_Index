@@ -7,7 +7,9 @@ import 'package:path_provider/path_provider.dart';
 import '../models/app_currency.dart';
 import '../models/market_prices.dart';
 import '../models/product.dart';
+import '../models/user_product.dart';
 import 'product_price_resolver.dart';
+import 'user_product_price_resolver.dart';
 import 'widget_sync_service.dart';
 
 class ProductExportService {
@@ -17,9 +19,47 @@ class ProductExportService {
     required AppCurrency selectedCurrency,
     required bool showSats,
     required Map<String, double> customPrices,
+    required List<UserProduct> userProducts,
   }) async {
+    final officialProducts = products.map((product) {
+      final effectivePriceEuro = ProductPriceResolver.effectivePriceEuro(
+        product: product,
+        customPrices: customPrices,
+        marketPrices: marketPrices,
+      );
+
+      return <String, dynamic>{
+        'id': product.id,
+        'name': product.name,
+        'emoji': product.emoji,
+        'priceEuro': effectivePriceEuro,
+        'priceAmount': effectivePriceEuro,
+        'priceCurrency': AppCurrency.eur.code,
+        'isUserProduct': false,
+        'liveAsset': product.liveMarketAsset?.name,
+      };
+    });
+
+    final personalProducts = userProducts.map((product) {
+      final priceEuro = UserProductPriceResolver.priceInEuro(
+        product: product,
+        marketPrices: marketPrices,
+      );
+
+      return <String, dynamic>{
+        'id': product.id,
+        'name': product.name,
+        'emoji': product.emoji,
+        'priceEuro': priceEuro,
+        'priceAmount': product.price,
+        'priceCurrency': product.currency.code,
+        'isUserProduct': true,
+        'liveAsset': null,
+      };
+    });
+
     final payload = <String, dynamic>{
-      'schemaVersion': 2,
+      'schemaVersion': 3,
       'currency': selectedCurrency.code,
       'showSats': showSats,
       'updatedAt': marketPrices.fetchedAt.millisecondsSinceEpoch,
@@ -27,28 +67,14 @@ class ProductExportService {
         'bitcoin': marketPrices.bitcoinPricesByCode,
         'ethereum': marketPrices.ethereumPricesByCode,
       },
-      'products':
-          products.map((product) {
-            final effectivePriceEuro = ProductPriceResolver.effectivePriceEuro(
-              product: product,
-              customPrices: customPrices,
-              marketPrices: marketPrices,
-            );
-
-            return <String, dynamic>{
-              'id': product.id,
-              'name': product.name,
-              'emoji': product.emoji,
-              'priceEuro': effectivePriceEuro,
-              'liveAsset': product.liveMarketAsset?.name,
-            };
-          }).toList(),
+      'products': <Map<String, dynamic>>[
+        ...officialProducts,
+        ...personalProducts,
+      ],
     };
 
     final encoded = jsonEncode(payload);
 
-    // Copie de diagnostic. Le partage réel avec Android passe
-    // par MethodChannel afin d'éviter toute ambiguïté de chemin.
     if (!kIsWeb) {
       try {
         final directory = await getApplicationDocumentsDirectory();

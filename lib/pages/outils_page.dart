@@ -3,9 +3,28 @@ import 'package:flutter/material.dart';
 import '../models/app_currency.dart';
 import '../models/market_prices.dart';
 import '../models/product.dart';
+import '../models/user_product.dart';
 import '../services/product_price_resolver.dart';
+import '../services/user_product_price_resolver.dart';
 
 enum _ConversionUnit { sats, btc, eur, secondary }
+
+class _ComparisonItem {
+  final Product? officialProduct;
+  final UserProduct? userProduct;
+
+  const _ComparisonItem.official(Product product)
+    : officialProduct = product,
+      userProduct = null;
+
+  const _ComparisonItem.user(UserProduct product)
+    : officialProduct = null,
+      userProduct = product;
+
+  String get name => officialProduct?.name ?? userProduct!.name;
+  String get emoji => officialProduct?.emoji ?? userProduct!.emoji;
+  bool get isUserProduct => userProduct != null;
+}
 
 /// Colore uniquement les chiffres significatifs en orange.
 ///
@@ -46,6 +65,7 @@ class OutilsPage extends StatefulWidget {
   final List<Product> products;
   final MarketPrices marketPrices;
   final Map<String, double> customPrices;
+  final List<UserProduct> userProducts;
   final AppCurrency selectedCurrency;
   final bool isDark;
 
@@ -54,6 +74,7 @@ class OutilsPage extends StatefulWidget {
     required this.products,
     required this.marketPrices,
     required this.customPrices,
+    required this.userProducts,
     required this.selectedCurrency,
     required this.isDark,
   });
@@ -65,7 +86,8 @@ class OutilsPage extends StatefulWidget {
 class _OutilsPageState extends State<OutilsPage> {
   static const double _satsPerBitcoin = 100000000;
 
-  late Product selectedProduct;
+  late final List<_ComparisonItem> _comparisonItems;
+  late _ComparisonItem selectedItem;
   late final Map<_ConversionUnit, _SignificantDigitsController> _controllers;
   late final Map<_ConversionUnit, FocusNode> _focusNodes;
 
@@ -80,7 +102,11 @@ class _OutilsPageState extends State<OutilsPage> {
   void initState() {
     super.initState();
 
-    selectedProduct = widget.products.first;
+    _comparisonItems = [
+      ...widget.products.map(_ComparisonItem.official),
+      ...widget.userProducts.map(_ComparisonItem.user),
+    ];
+    selectedItem = _comparisonItems.first;
 
     _controllers = {
       for (final unit in _ConversionUnit.values)
@@ -390,23 +416,40 @@ class _OutilsPageState extends State<OutilsPage> {
 
     final euroValue = _btcValue * widget.marketPrices.btcEur;
 
-    final itemPriceEuro = ProductPriceResolver.effectivePriceEuro(
-      product: selectedProduct,
-      customPrices: widget.customPrices,
-      marketPrices: widget.marketPrices,
-    );
+    late final double itemPriceEuro;
+    late final String priceLabel;
 
-    final hasCustomPrice = ProductPriceResolver.hasCustomPrice(
-      selectedProduct,
-      widget.customPrices,
-    );
+    final userProduct = selectedItem.userProduct;
+    final officialProduct = selectedItem.officialProduct;
 
-    final priceLabel =
-        selectedProduct.liveMarketAsset != null
-            ? 'Prix unitaire en direct'
-            : hasCustomPrice
-            ? 'Prix unitaire personnalisé'
-            : 'Prix unitaire de référence';
+    if (userProduct != null) {
+      itemPriceEuro = UserProductPriceResolver.priceInEuro(
+        product: userProduct,
+        marketPrices: widget.marketPrices,
+      );
+      priceLabel =
+          'Prix personnel en ${userProduct.currency.code.toUpperCase()}';
+    } else if (officialProduct != null) {
+      itemPriceEuro = ProductPriceResolver.effectivePriceEuro(
+        product: officialProduct,
+        customPrices: widget.customPrices,
+        marketPrices: widget.marketPrices,
+      );
+
+      final hasCustomPrice = ProductPriceResolver.hasCustomPrice(
+        officialProduct,
+        widget.customPrices,
+      );
+
+      priceLabel =
+          officialProduct.liveMarketAsset != null
+              ? 'Prix unitaire en direct'
+              : hasCustomPrice
+              ? 'Prix unitaire personnalisé'
+              : 'Prix unitaire de référence';
+    } else {
+      return const SizedBox.shrink();
+    }
 
     if (itemPriceEuro <= 0) {
       return const SizedBox.shrink();
@@ -446,8 +489,8 @@ class _OutilsPageState extends State<OutilsPage> {
                   ),
                   TextSpan(
                     text:
-                        ' × ${selectedProduct.emoji} '
-                        '${selectedProduct.name}',
+                        ' × ${selectedItem.emoji} '
+                        '${selectedItem.name}',
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ],
@@ -628,26 +671,26 @@ class _OutilsPageState extends State<OutilsPage> {
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: DropdownButton<Product>(
-                      value: selectedProduct,
+                    child: DropdownButton<_ComparisonItem>(
+                      value: selectedItem,
                       isExpanded: true,
-                      onChanged: (product) {
-                        if (product == null) {
+                      onChanged: (item) {
+                        if (item == null) {
                           return;
                         }
 
                         setState(() {
-                          selectedProduct = product;
+                          selectedItem = item;
                         });
                       },
                       items:
-                          widget.products
+                          _comparisonItems
                               .map(
-                                (product) => DropdownMenuItem<Product>(
-                                  value: product,
+                                (item) => DropdownMenuItem<_ComparisonItem>(
+                                  value: item,
                                   child: Text(
-                                    '${product.emoji} '
-                                    '${product.name}',
+                                    '${item.emoji} ${item.name}'
+                                    '${item.isUserProduct ? ' · personnel' : ''}',
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),

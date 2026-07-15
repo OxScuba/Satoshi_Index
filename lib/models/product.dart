@@ -105,7 +105,7 @@ final Product pizzaProduct = Product(
 
 final Product bigMacProduct = Product(
   id: 'big_mac',
-  name: 'Big Mac (zone euro)',
+  name: 'Big Mac',
   emoji: '🍔',
   staticPrice: 6.08,
   data: bigMacPriceData,

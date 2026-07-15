@@ -30,6 +30,9 @@ data class WidgetProductSnapshot(
     val emoji: String,
     val priceEuro: Double,
     val liveAsset: String?,
+    val priceAmount: Double = 0.0,
+    val priceCurrency: String = "eur",
+    val isUserProduct: Boolean = false,
 )
 
 data class WidgetDataSnapshot(

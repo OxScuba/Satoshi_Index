@@ -72,7 +72,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(product.name),
+            Text('${product.emoji} ${product.name}'),
             if (bitcoinPriceEUR != null)
               Row(
                 children: [

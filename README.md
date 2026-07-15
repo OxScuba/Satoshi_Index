@@ -42,6 +42,7 @@ L’application permet notamment de répondre à ces questions :
 - Comment le prix d’un café évolue-t-il en euros et en Bitcoin ?
 - Quelle quantité de biens peut-on acheter avec un montant donné en BTC ?
 - Le prix que je paie réellement est-il différent du prix statistique de référence ?
+- Combien de satoshis vaut un produit qui compte dans mon propre quotidien ?
 - Comment les produits apparaissent-ils dans ma propre devise ?
 
 > **1 bitcoin = 100 000 000 satoshis**
@@ -90,6 +91,38 @@ Les graphiques et tableaux historiques conservent toujours les données trimestr
 
 Les prix personnalisés sont enregistrés **localement en euros** et ne quittent pas l’appareil.
 
+
+### Produits personnels
+
+En plus des produits historiques intégrés à l’application, l’utilisateur peut créer jusqu’à **trois produits personnels** correspondant à ses propres habitudes.
+
+Chaque produit personnel comprend :
+
+- un nom ;
+- un emoji ;
+- un prix actuel ;
+- une devise d’origine parmi les douze devises disponibles.
+
+Quelques exemples :
+
+- 🥐 un croissant ;
+- 🍜 un bol de nouilles ;
+- 🚇 un ticket de métro ;
+- 🥙 un kebab ;
+- 🎟️ une place de cinéma.
+
+Les produits personnels apparaissent :
+
+- en bas de la page d’accueil ;
+- dans les comparaisons de la page Outils ;
+- dans la liste des produits disponibles pour les widgets Android.
+
+Leur prix est automatiquement converti en BTC, en satoshis et dans la devise d’affichage sélectionnée. La devise d’origine reste conservée afin d’éviter qu’un produit saisi en HKD, en USD ou en RUB soit artificiellement figé en euros.
+
+Contrairement aux produits officiels, les produits personnels ne possèdent ni fiche historique, ni graphique, ni série trimestrielle. Ils représentent uniquement un prix actuel choisi par l’utilisateur.
+
+Les produits personnels sont enregistrés localement et peuvent être modifiés ou supprimés à tout moment.
+
 ### Douze devises
 
 Satoshi Index prend en charge :
@@ -109,7 +142,7 @@ Satoshi Index prend en charge :
 | RUB | Rouble russe | ₽ |
 | ILS | Nouveau shekel israélien | ₪ |
 
-Le cours de Bitcoin, les cartes de l’accueil, les prix personnels, Ethereum, le convertisseur et les widgets utilisent automatiquement la devise sélectionnée.
+Le cours de Bitcoin, les cartes de l’accueil, les prix personnalisés, les produits personnels, Ethereum, le convertisseur et les widgets utilisent automatiquement la devise sélectionnée.
 
 ### Convertisseur universel
 
@@ -140,6 +173,7 @@ Satoshi Index propose des widgets natifs pour l’écran d’accueil Android :
 - prix en BTC ou en sats ;
 - devise synchronisée avec l’application ;
 - prise en compte des prix personnalisés ;
+- prise en charge des produits personnels ;
 - actualisation périodique autonome ;
 - actualisation manuelle en touchant le widget ;
 - format initial compact `2 × 1` ;
@@ -187,6 +221,8 @@ Les données sont organisées par trimestre et sont actuellement mises à jour j
 
 > Les ajustements permettent de ramener les séries statistiques à une unité concrète et compréhensible. Ils sont documentés dans les fichiers du dossier [`lib/data`](lib/data).
 
+À ces onze produits officiels peuvent s’ajouter jusqu’à **trois produits personnels** définis localement par l’utilisateur. Ces produits ne possèdent pas d’historique, mais bénéficient des mêmes conversions actuelles en BTC, sats et devises fiat.
+
 ---
 
 ## Utilisation
@@ -214,6 +250,19 @@ Les données sont organisées par trimestre et sont actuellement mises à jour j
 3. Saisir le prix réellement payé.
 4. Laisser un champ vide pour revenir au prix trimestriel de référence.
 5. Enregistrer.
+
+
+### Ajouter ses propres produits
+
+1. Ouvrir **Paramètres**.
+2. Sélectionner **Mes produits**.
+3. Choisir l’un des trois emplacements disponibles.
+4. Saisir un nom, un emoji, un prix et sa devise d’origine.
+5. Enregistrer.
+
+Le produit apparaît ensuite en bas de l’accueil, dans la page Outils et dans le sélecteur des widgets Android.
+
+Un produit personnel peut être renommé, repricé ou supprimé à tout moment. Lorsqu’un produit utilisé par un widget est supprimé, le widget demande simplement d’en sélectionner un autre.
 
 ### Changer de devise
 
@@ -295,16 +344,16 @@ build/web
 ```text
 lib/
 ├── data/          Séries historiques trimestrielles
-├── models/        Produits, devises et cours de marché
+├── models/        Produits officiels et personnels, devises et cours
 ├── pages/         Écrans de l’application
-├── services/      CoinGecko, cache, prix personnels et widgets
+├── services/      CoinGecko, cache, personnalisation et widgets
 └── assets/        Images, logos et documents
 
 android/app/src/main/kotlin/
 └── .../widgets/   Widgets Android natifs et rafraîchissement autonome
 ```
 
-Les données historiques sont séparées de la logique d’affichage. Les prix personnels et les préférences sont stockés localement avec `SharedPreferences`.
+Les données historiques sont séparées de la logique d’affichage. Les prix personnalisés, les trois produits personnels et les préférences sont stockés localement avec `SharedPreferences`.
 
 ---
 
@@ -326,6 +375,7 @@ Satoshi Index est conçu sans compte utilisateur et sans collecte de données pe
 
 - Aucun compte n’est requis.
 - Les prix personnalisés restent sur l’appareil.
+- Les produits personnels restent sur l’appareil.
 - Les préférences et le cache sont stockés localement.
 - L’application n’accède ni aux contacts, ni au microphone, ni à la caméra.
 - L’accès à Internet sert à récupérer les cours de marché et à ouvrir certaines ressources externes.
@@ -338,7 +388,8 @@ Satoshi Index est conçu sans compte utilisateur et sans collecte de données pe
 Satoshi Index est un outil pédagogique et informatif.
 
 - Les prix historiques peuvent reposer sur des moyennes, indices ou ajustements.
-- Les prix personnels dépendent des valeurs saisies par l’utilisateur.
+- Les prix personnalisés dépendent des valeurs saisies par l’utilisateur.
+- Les produits personnels ne possèdent pas de données historiques ni de source statistique.
 - Les conversions fiat utilisent des taux croisés calculés à partir des cours de Bitcoin.
 - Les cours en direct dépendent de services externes.
 - L’application ne constitue ni un conseil financier, ni une recommandation d’investissement.
@@ -378,7 +429,7 @@ Ouvrez ensuite une Pull Request ou une [issue](https://github.com/OxScuba/Satosh
 - nouvelles séries de prix ;
 - sources internationales ;
 - amélioration continue des widgets ;
-- davantage d’options de personnalisation.
+- davantage d’options de personnalisation et de sauvegarde locale.
 
 ---
 

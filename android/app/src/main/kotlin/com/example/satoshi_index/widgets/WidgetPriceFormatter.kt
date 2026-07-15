@@ -92,9 +92,16 @@ object WidgetPriceFormatter {
         product: WidgetProductSnapshot,
         market: WidgetMarketSnapshot,
     ): Double {
-        return when (product.liveAsset) {
-            "ethereum" ->
+        return when {
+            product.liveAsset == "ethereum" ->
                 market.ethereumPrice("eur")
+
+            product.isUserProduct ->
+                convertPersonalPrice(
+                    product = product,
+                    market = market,
+                    targetCurrency = "eur",
+                )
 
             else -> product.priceEuro
         }
@@ -104,34 +111,33 @@ object WidgetPriceFormatter {
         product: WidgetProductSnapshot,
         snapshot: WidgetDataSnapshot,
     ): Double {
-        val currency =
+        val targetCurrency =
             WidgetCurrencyCatalog.normalize(
                 snapshot.currency,
             )
-        val priceEuro =
-            productPriceEuro(
-                product,
-                snapshot.market,
-            )
 
-        if (currency == "eur") {
-            return priceEuro
-        }
-
-        return when (product.liveAsset) {
-            "ethereum" ->
+        return when {
+            product.liveAsset == "ethereum" ->
                 snapshot.market.ethereumPrice(
-                    currency,
+                    targetCurrency,
                 )
+
+            product.isUserProduct ->
+                convertPersonalPrice(
+                    product = product,
+                    market = snapshot.market,
+                    targetCurrency = targetCurrency,
+                )
+
+            targetCurrency == "eur" ->
+                product.priceEuro
 
             else -> {
                 val bitcoinEuro =
-                    snapshot.market.bitcoinPrice(
-                        "eur",
-                    )
+                    snapshot.market.bitcoinPrice("eur")
                 val bitcoinTarget =
                     snapshot.market.bitcoinPrice(
-                        currency,
+                        targetCurrency,
                     )
 
                 if (
@@ -140,7 +146,7 @@ object WidgetPriceFormatter {
                 ) {
                     0.0
                 } else {
-                    priceEuro *
+                    product.priceEuro *
                         bitcoinTarget /
                         bitcoinEuro
                 }
@@ -152,6 +158,29 @@ object WidgetPriceFormatter {
         product: WidgetProductSnapshot,
         snapshot: WidgetDataSnapshot,
     ): Double {
+        if (product.isUserProduct) {
+            val sourceCurrency =
+                WidgetCurrencyCatalog.normalize(
+                    product.priceCurrency,
+                )
+            val bitcoinSource =
+                snapshot.market.bitcoinPrice(
+                    sourceCurrency,
+                )
+            val amount = personalPriceAmount(product)
+
+            if (
+                bitcoinSource <= 0.0 ||
+                amount <= 0.0
+            ) {
+                return 0.0
+            }
+
+            return amount /
+                bitcoinSource *
+                SATS_PER_BITCOIN
+        }
+
         val bitcoinEuro =
             snapshot.market.bitcoinPrice("eur")
 
@@ -165,6 +194,56 @@ object WidgetPriceFormatter {
         ) /
             bitcoinEuro *
             SATS_PER_BITCOIN
+    }
+
+    private fun convertPersonalPrice(
+        product: WidgetProductSnapshot,
+        market: WidgetMarketSnapshot,
+        targetCurrency: String,
+    ): Double {
+        val sourceCurrency =
+            WidgetCurrencyCatalog.normalize(
+                product.priceCurrency,
+            )
+        val normalizedTarget =
+            WidgetCurrencyCatalog.normalize(
+                targetCurrency,
+            )
+        val amount = personalPriceAmount(product)
+
+        if (amount <= 0.0) {
+            return 0.0
+        }
+
+        if (sourceCurrency == normalizedTarget) {
+            return amount
+        }
+
+        val bitcoinSource =
+            market.bitcoinPrice(sourceCurrency)
+        val bitcoinTarget =
+            market.bitcoinPrice(normalizedTarget)
+
+        if (
+            bitcoinSource <= 0.0 ||
+            bitcoinTarget <= 0.0
+        ) {
+            return 0.0
+        }
+
+        return amount *
+            bitcoinTarget /
+            bitcoinSource
+    }
+
+    private fun personalPriceAmount(
+        product: WidgetProductSnapshot,
+    ): Double {
+        return if (product.priceAmount > 0.0) {
+            product.priceAmount
+        } else {
+            product.priceEuro
+        }
     }
 
     private fun groupInteger(

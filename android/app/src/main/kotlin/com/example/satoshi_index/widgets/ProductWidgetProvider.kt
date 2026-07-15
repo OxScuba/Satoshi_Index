@@ -72,33 +72,12 @@ class ProductWidgetProvider : AppWidgetProvider() {
                     appWidgetId,
                 )
 
-            val product = snapshot.products.firstOrNull {
-                it.id == productId
-            } ?: snapshot.products.firstOrNull()
-                ?: ProductWidgetCatalog.fallbackProducts.first()
-
-            val hasMarketData =
-                snapshot.market.bitcoinPrice("eur") > 0.0 &&
-                    snapshot.market.bitcoinPrice(
-                        snapshot.currency,
-                    ) > 0.0
-
-            val sats = if (hasMarketData) {
-                WidgetPriceFormatter.productPriceSats(
-                    product,
-                    snapshot,
-                )
+            val product = if (productId == null) {
+                snapshot.products.firstOrNull()
             } else {
-                0.0
-            }
-
-            val fiat = if (hasMarketData) {
-                WidgetPriceFormatter.productPriceFiat(
-                    product,
-                    snapshot,
-                )
-            } else {
-                0.0
+                snapshot.products.firstOrNull {
+                    it.id == productId
+                }
             }
 
             val views = RemoteViews(
@@ -122,6 +101,47 @@ class ProductWidgetProvider : AppWidgetProvider() {
                 views = views,
                 profile = sizeProfile,
             )
+
+            if (product == null) {
+                renderMissingProduct(
+                    context = context,
+                    views = views,
+                    appWidgetManager = appWidgetManager,
+                    appWidgetId = appWidgetId,
+                    sizeProfile = sizeProfile,
+                )
+                return
+            }
+
+            val hasMarketData =
+                snapshot.market.bitcoinPrice("eur") > 0.0 &&
+                    snapshot.market.bitcoinPrice(
+                        snapshot.currency,
+                    ) > 0.0 &&
+                    (
+                        !product.isUserProduct ||
+                            snapshot.market.bitcoinPrice(
+                                product.priceCurrency,
+                            ) > 0.0
+                        )
+
+            val sats = if (hasMarketData) {
+                WidgetPriceFormatter.productPriceSats(
+                    product,
+                    snapshot,
+                )
+            } else {
+                0.0
+            }
+
+            val fiat = if (hasMarketData) {
+                WidgetPriceFormatter.productPriceFiat(
+                    product,
+                    snapshot,
+                )
+            } else {
+                0.0
+            }
 
             views.setTextViewText(
                 R.id.widget_product_emoji,
@@ -212,6 +232,75 @@ class ProductWidgetProvider : AppWidgetProvider() {
                     PendingIntent.FLAG_UPDATE_CURRENT or
                         PendingIntent.FLAG_IMMUTABLE,
                 )
+
+            views.setOnClickPendingIntent(
+                R.id.widget_product_root,
+                pendingIntent,
+            )
+
+            appWidgetManager.updateAppWidget(
+                appWidgetId,
+                views,
+            )
+        }
+
+        private fun renderMissingProduct(
+            context: Context,
+            views: RemoteViews,
+            appWidgetManager: AppWidgetManager,
+            appWidgetId: Int,
+            sizeProfile: ProductWidgetSizeProfile,
+        ) {
+            views.setTextViewText(
+                R.id.widget_product_emoji,
+                "✏️",
+            )
+            views.setTextViewText(
+                R.id.widget_product_name,
+                "Produit supprimé",
+            )
+            views.setTextViewText(
+                R.id.widget_product_bitcoin_price,
+                "Touchez pour choisir",
+            )
+            views.setTextViewText(
+                R.id.widget_product_fiat_price,
+                "un autre produit",
+            )
+            views.setTextViewText(
+                R.id.widget_product_status,
+                "Configuration nécessaire",
+            )
+            views.setViewVisibility(
+                R.id.widget_product_status,
+                if (sizeProfile.showStatus) {
+                    View.VISIBLE
+                } else {
+                    View.GONE
+                },
+            )
+            views.setViewVisibility(
+                R.id.widget_product_progress,
+                View.GONE,
+            )
+
+            val configureIntent = Intent(
+                context,
+                ProductWidgetConfigureActivity::class.java,
+            ).apply {
+                putExtra(
+                    AppWidgetManager.EXTRA_APPWIDGET_ID,
+                    appWidgetId,
+                )
+            }
+
+            val pendingIntent = PendingIntent.getActivity(
+                context,
+                appWidgetId,
+                configureIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or
+                    PendingIntent.FLAG_IMMUTABLE,
+            )
 
             views.setOnClickPendingIntent(
                 R.id.widget_product_root,

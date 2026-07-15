@@ -76,11 +76,28 @@ object ProductWidgetRepository {
     ): WidgetDataSnapshot {
         val oldSnapshot =
             readSnapshotOrFallback(context)
+        val requestedCurrencies = linkedSetOf(
+            "eur",
+            WidgetCurrencyCatalog.normalize(
+                oldSnapshot.currency,
+            ),
+        ).apply {
+            oldSnapshot.products
+                .filter { it.isUserProduct }
+                .forEach { product ->
+                    add(
+                        WidgetCurrencyCatalog.normalize(
+                            product.priceCurrency,
+                        ),
+                    )
+                }
+        }
+
         val refreshedMarket =
-            fetchMarketPrices(oldSnapshot.currency)
+            fetchMarketPrices(requestedCurrencies)
 
         val refreshed = oldSnapshot.copy(
-            schemaVersion = 2,
+            schemaVersion = 3,
             currency = WidgetCurrencyCatalog.normalize(
                 oldSnapshot.currency,
             ),
@@ -104,15 +121,15 @@ object ProductWidgetRepository {
     }
 
     private fun fetchMarketPrices(
-        currency: String,
+        currencies: Set<String>,
     ): WidgetMarketSnapshot {
-        val selectedCurrency =
-            WidgetCurrencyCatalog.normalize(currency)
+        val normalizedCurrencies = currencies
+            .map(WidgetCurrencyCatalog::normalize)
+            .toSet() +
+            "eur"
 
-        val requestedCurrencies = linkedSetOf(
-            "eur",
-            selectedCurrency,
-        ).joinToString(",")
+        val requestedCurrencies =
+            normalizedCurrencies.joinToString(",")
 
         val url =
             "$PRICE_BASE_URL" +
@@ -131,7 +148,7 @@ object ProductWidgetRepository {
             )
             setRequestProperty(
                 "User-Agent",
-                "SatoshiIndex-Android-Widget/2.0",
+                "SatoshiIndex-Android-Widget/3.0",
             )
         }
 
@@ -171,10 +188,12 @@ object ProductWidgetRepository {
                     bitcoinPrices["eur"]!! > 0.0 &&
                     ethereumPrices["eur"] != null &&
                     ethereumPrices["eur"]!! > 0.0 &&
-                    bitcoinPrices[selectedCurrency] != null &&
-                    bitcoinPrices[selectedCurrency]!! > 0.0 &&
-                    ethereumPrices[selectedCurrency] != null &&
-                    ethereumPrices[selectedCurrency]!! > 0.0,
+                    normalizedCurrencies.all { code ->
+                        bitcoinPrices[code] != null &&
+                            bitcoinPrices[code]!! > 0.0 &&
+                            ethereumPrices[code] != null &&
+                            ethereumPrices[code]!! > 0.0
+                    },
             ) {
                 "Cours CoinGecko invalide"
             }
@@ -318,6 +337,26 @@ object ProductWidgetRepository {
                                 it.isNotBlank() &&
                                     it != "null"
                             },
+                        priceAmount =
+                            product.optDouble(
+                                "priceAmount",
+                                product.optDouble(
+                                    "priceEuro",
+                                    0.0,
+                                ),
+                            ),
+                        priceCurrency =
+                            WidgetCurrencyCatalog.normalize(
+                                product.optString(
+                                    "priceCurrency",
+                                    "eur",
+                                ),
+                            ),
+                        isUserProduct =
+                            product.optBoolean(
+                                "isUserProduct",
+                                false,
+                            ),
                     ),
                 )
             }
@@ -397,7 +436,7 @@ object ProductWidgetRepository {
         snapshot: WidgetDataSnapshot,
     ): JSONObject {
         return JSONObject().apply {
-            put("schemaVersion", 2)
+            put("schemaVersion", 3)
             put(
                 "currency",
                 WidgetCurrencyCatalog.normalize(
@@ -451,6 +490,18 @@ object ProductWidgetRepository {
                                     "liveAsset",
                                     product.liveAsset
                                         ?: JSONObject.NULL,
+                                )
+                                put(
+                                    "priceAmount",
+                                    product.priceAmount,
+                                )
+                                put(
+                                    "priceCurrency",
+                                    product.priceCurrency,
+                                )
+                                put(
+                                    "isUserProduct",
+                                    product.isUserProduct,
                                 )
                             },
                         )
