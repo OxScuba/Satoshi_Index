@@ -2,12 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/app_currency.dart';
+import '../models/product.dart';
+import 'custom_prices_page.dart';
 import 'donation_page.dart';
 
 class SettingsPage extends StatefulWidget {
   final Function(bool) onThemeChanged;
+  final List<Product> products;
 
-  const SettingsPage({super.key, required this.onThemeChanged});
+  const SettingsPage({
+    super.key,
+    required this.onThemeChanged,
+    required this.products,
+  });
 
   @override
   State<SettingsPage> createState() => _SettingsPageState();
@@ -34,7 +41,9 @@ class _SettingsPageState extends State<SettingsPage> {
       isDarkMode = prefs.getBool('darkMode') ?? false;
       showSats = prefs.getBool('showSats') ?? false;
       selectedLanguage = prefs.getString('language') ?? 'fr';
-      selectedCurrency = appCurrencyFromCode(prefs.getString('currency'));
+      selectedCurrency = appCurrencyFromCode(
+        prefs.getString('currency'),
+      );
     });
   }
 
@@ -56,6 +65,10 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final customizableCount = widget.products
+        .where((product) => product.allowCustomPrice)
+        .length;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Paramètres'),
@@ -70,7 +83,9 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
           SwitchListTile(
             title: const Text('Afficher les prix en sats'),
-            subtitle: const Text('Remplace 0.00 00X XXX ₿ par X XXX sats'),
+            subtitle: const Text(
+              'Remplace 0.00 00X XXX ₿ par X XXX sats',
+            ),
             value: showSats,
             onChanged: (value) {
               setState(() => showSats = value);
@@ -86,15 +101,16 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             trailing: DropdownButton<AppCurrency>(
               value: selectedCurrency,
-              items:
-                  AppCurrency.values
-                      .map(
-                        (currency) => DropdownMenuItem<AppCurrency>(
-                          value: currency,
-                          child: Text('${currency.label} (${currency.symbol})'),
-                        ),
-                      )
-                      .toList(),
+              items: AppCurrency.values
+                  .map(
+                    (currency) => DropdownMenuItem<AppCurrency>(
+                      value: currency,
+                      child: Text(
+                        '${currency.label} (${currency.symbol})',
+                      ),
+                    ),
+                  )
+                  .toList(),
               onChanged: (currency) {
                 if (currency == null) return;
 
@@ -105,12 +121,41 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
           const Divider(),
           ListTile(
+            leading: const Icon(
+              Icons.shopping_basket_outlined,
+              color: Colors.orange,
+            ),
+            title: const Text('Prix personnalisés'),
+            subtitle: Text(
+              'Adaptez $customizableCount produits aux prix '
+              'que vous payez réellement.',
+            ),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => CustomPricesPage(
+                    products: widget.products,
+                  ),
+                ),
+              );
+            },
+          ),
+          const Divider(),
+          ListTile(
             title: const Text('Langue'),
             trailing: DropdownButton<String>(
               value: selectedLanguage,
               items: const [
-                DropdownMenuItem(value: 'fr', child: Text('Français')),
-                DropdownMenuItem(value: 'en', child: Text('English')),
+                DropdownMenuItem(
+                  value: 'fr',
+                  child: Text('Français'),
+                ),
+                DropdownMenuItem(
+                  value: 'en',
+                  child: Text('English'),
+                ),
               ],
               onChanged: (value) {
                 if (value == null) return;
@@ -122,12 +167,17 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
           const Divider(),
           ListTile(
-            leading: const Icon(Icons.favorite, color: Colors.orange),
+            leading: const Icon(
+              Icons.favorite,
+              color: Colors.orange,
+            ),
             title: const Text('Tip me in Bitcoin'),
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const DonationPage()),
+                MaterialPageRoute(
+                  builder: (_) => const DonationPage(),
+                ),
               );
             },
           ),

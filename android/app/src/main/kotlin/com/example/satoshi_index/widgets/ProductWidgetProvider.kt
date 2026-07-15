@@ -6,12 +6,15 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.os.Bundle
+import android.util.TypedValue
 import android.view.View
 import android.widget.RemoteViews
 import com.example.satoshi_index.R
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.math.roundToInt
 
 class ProductWidgetProvider : AppWidgetProvider() {
     companion object {
@@ -107,6 +110,17 @@ class ProductWidgetProvider : AppWidgetProvider() {
                 appearance = appearance,
             )
 
+            val sizeProfile = readSizeProfile(
+                appWidgetManager = appWidgetManager,
+                appWidgetId = appWidgetId,
+            )
+
+            applySizeProfile(
+                context = context,
+                views = views,
+                profile = sizeProfile,
+            )
+
             views.setTextViewText(
                 R.id.widget_product_emoji,
                 product.emoji,
@@ -164,6 +178,15 @@ class ProductWidgetProvider : AppWidgetProvider() {
             )
 
             views.setViewVisibility(
+                R.id.widget_product_status,
+                if (sizeProfile.showStatus) {
+                    View.VISIBLE
+                } else {
+                    View.GONE
+                },
+            )
+
+            views.setViewVisibility(
                 R.id.widget_product_progress,
                 if (loading) View.VISIBLE else View.GONE,
             )
@@ -196,6 +219,69 @@ class ProductWidgetProvider : AppWidgetProvider() {
             appWidgetManager.updateAppWidget(
                 appWidgetId,
                 views,
+            )
+        }
+
+        private fun readSizeProfile(
+            appWidgetManager: AppWidgetManager,
+            appWidgetId: Int,
+        ): ProductWidgetSizeProfile {
+            val options =
+                appWidgetManager.getAppWidgetOptions(
+                    appWidgetId,
+                )
+
+            val widthDp = options.getInt(
+                AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH,
+                0,
+            )
+
+            return ProductWidgetSizeProfile.fromWidthDp(
+                widthDp,
+            )
+        }
+
+        private fun applySizeProfile(
+            context: Context,
+            views: RemoteViews,
+            profile: ProductWidgetSizeProfile,
+        ) {
+            views.setTextViewTextSize(
+                R.id.widget_product_emoji,
+                TypedValue.COMPLEX_UNIT_SP,
+                profile.emojiTextSizeSp,
+            )
+
+            views.setTextViewTextSize(
+                R.id.widget_product_name,
+                TypedValue.COMPLEX_UNIT_SP,
+                profile.nameTextSizeSp,
+            )
+
+            views.setTextViewTextSize(
+                R.id.widget_product_bitcoin_price,
+                TypedValue.COMPLEX_UNIT_SP,
+                profile.bitcoinTextSizeSp,
+            )
+
+            views.setTextViewTextSize(
+                R.id.widget_product_fiat_price,
+                TypedValue.COMPLEX_UNIT_SP,
+                profile.fiatTextSizeSp,
+            )
+
+            views.setTextViewTextSize(
+                R.id.widget_product_status,
+                TypedValue.COMPLEX_UNIT_SP,
+                profile.statusTextSizeSp,
+            )
+
+            views.setViewPadding(
+                R.id.widget_product_root,
+                dpToPx(context, profile.paddingStartDp),
+                dpToPx(context, profile.paddingTopDp),
+                dpToPx(context, profile.paddingEndDp),
+                dpToPx(context, profile.paddingBottomDp),
             )
         }
 
@@ -271,9 +357,8 @@ class ProductWidgetProvider : AppWidgetProvider() {
                 colors.primary,
             )
 
-            // Cette couleur sert de base aux zéros du prix BTC.
-            // Le ForegroundColorSpan orange des chiffres significatifs
-            // reste prioritaire.
+            // Couleur de base des zéros non significatifs.
+            // Les chiffres significatifs restent orange grâce aux spans.
             views.setTextColor(
                 R.id.widget_product_bitcoin_price,
                 colors.primary,
@@ -288,6 +373,16 @@ class ProductWidgetProvider : AppWidgetProvider() {
                 R.id.widget_product_status,
                 colors.muted,
             )
+        }
+
+        private fun dpToPx(
+            context: Context,
+            valueDp: Int,
+        ): Int {
+            return (
+                valueDp *
+                    context.resources.displayMetrics.density
+                ).roundToInt()
         }
 
         @Suppress("DEPRECATION")
@@ -324,6 +419,26 @@ class ProductWidgetProvider : AppWidgetProvider() {
                 appWidgetId = appWidgetId,
             )
         }
+    }
+
+    override fun onAppWidgetOptionsChanged(
+        context: Context,
+        appWidgetManager: AppWidgetManager,
+        appWidgetId: Int,
+        newOptions: Bundle,
+    ) {
+        super.onAppWidgetOptionsChanged(
+            context,
+            appWidgetManager,
+            appWidgetId,
+            newOptions,
+        )
+
+        updateWidget(
+            context = context,
+            appWidgetManager = appWidgetManager,
+            appWidgetId = appWidgetId,
+        )
     }
 
     override fun onEnabled(context: Context) {

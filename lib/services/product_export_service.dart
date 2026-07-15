@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import '../models/app_currency.dart';
 import '../models/market_prices.dart';
 import '../models/product.dart';
+import 'product_price_resolver.dart';
 import 'widget_sync_service.dart';
 
 class ProductExportService {
@@ -15,6 +16,7 @@ class ProductExportService {
     MarketPrices marketPrices, {
     required AppCurrency selectedCurrency,
     required bool showSats,
+    required Map<String, double> customPrices,
   }) async {
     final payload = <String, dynamic>{
       'schemaVersion': 1,
@@ -27,18 +29,22 @@ class ProductExportService {
         'ethEur': marketPrices.ethEur,
         'ethUsd': marketPrices.ethUsd,
       },
-      'products':
-          products.map((product) {
-            final latest = product.data.last;
+      'products': products.map((product) {
+        final effectivePriceEuro =
+            ProductPriceResolver.effectivePriceEuro(
+          product: product,
+          customPrices: customPrices,
+          marketPrices: marketPrices,
+        );
 
-            return <String, dynamic>{
-              'id': product.id,
-              'name': product.name,
-              'emoji': product.emoji,
-              'priceEuro': latest.priceEuro,
-              'liveAsset': product.liveMarketAsset?.name,
-            };
-          }).toList(),
+        return <String, dynamic>{
+          'id': product.id,
+          'name': product.name,
+          'emoji': product.emoji,
+          'priceEuro': effectivePriceEuro,
+          'liveAsset': product.liveMarketAsset?.name,
+        };
+      }).toList(),
     };
 
     final encoded = jsonEncode(payload);
@@ -48,10 +54,14 @@ class ProductExportService {
     if (!kIsWeb) {
       try {
         final directory = await getApplicationDocumentsDirectory();
-        final file = File('${directory.path}/widget_product_data.json');
+        final file = File(
+          '${directory.path}/widget_product_data.json',
+        );
         await file.writeAsString(encoded, flush: true);
       } catch (error) {
-        debugPrint('Écriture du diagnostic widget impossible : $error');
+        debugPrint(
+          'Écriture du diagnostic widget impossible : $error',
+        );
       }
     }
 
