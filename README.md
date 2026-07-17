@@ -10,7 +10,8 @@
 [![Flutter](https://img.shields.io/badge/Flutter-application-02569B?logo=flutter)](https://flutter.dev)
 [![Android](https://img.shields.io/badge/Android-APK-3DDC84?logo=android&logoColor=white)](https://github.com/OxScuba/Satoshi_Index/releases/latest)
 [![Dernière release](https://img.shields.io/github/v/release/OxScuba/Satoshi_Index?color=f7931a&label=release)](https://github.com/OxScuba/Satoshi_Index/releases/latest)
-[![Données](https://img.shields.io/badge/données-T2%202026-f7931a)](#produits-et-données)
+
+**Français** · [English](README_EN.md)
 
 **Satoshi Index** est une application libre qui compare l’évolution du prix de produits du quotidien en monnaie fiat, en bitcoins et en satoshis.
 
@@ -122,6 +123,19 @@ Leur prix est automatiquement converti en BTC, en satoshis et dans la devise d�
 Contrairement aux produits officiels, les produits personnels ne possèdent ni fiche historique, ni graphique, ni série trimestrielle. Ils représentent uniquement un prix actuel choisi par l’utilisateur.
 
 Les produits personnels sont enregistrés localement et peuvent être modifiés ou supprimés à tout moment.
+
+### Trois langues d’interface
+
+Satoshi Index est disponible en :
+
+* 🇫🇷 français ;
+* 🇬🇧 anglais ;
+* 🇪🇸 espagnol.
+
+La langue sélectionnée s’applique à l’interface de l’application, aux noms des produits officiels, aux devises, aux pages pédagogiques, aux livres blancs de Bitcoin et aux widgets Android.
+
+Les noms saisis par les utilisateurs pour leurs produits personnels ne sont jamais traduits automatiquement.
+
 
 ### Douze devises
 
