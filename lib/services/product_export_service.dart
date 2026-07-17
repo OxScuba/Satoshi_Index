@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../l10n/app_translations.dart';
 import '../models/app_currency.dart';
 import '../models/market_prices.dart';
 import '../models/product.dart';
@@ -30,7 +31,7 @@ class ProductExportService {
 
       return <String, dynamic>{
         'id': product.id,
-        'name': product.name,
+        'name': AppTranslations.productName(product.id, product.name),
         'emoji': product.emoji,
         'priceEuro': effectivePriceEuro,
         'priceAmount': effectivePriceEuro,
@@ -59,7 +60,8 @@ class ProductExportService {
     });
 
     final payload = <String, dynamic>{
-      'schemaVersion': 3,
+      'schemaVersion': 4,
+      'language': AppTranslations.languageCode,
       'currency': selectedCurrency.code,
       'showSats': showSats,
       'updatedAt': marketPrices.fetchedAt.millisecondsSinceEpoch,

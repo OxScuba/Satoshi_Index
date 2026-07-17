@@ -1,22 +1,25 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide RichText, Text, TextSpan;
 import 'package:flutter/services.dart';
+
+import '../l10n/app_translations.dart';
+import '../l10n/localized_widgets.dart';
 
 class DonationPage extends StatelessWidget {
   const DonationPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    const lightningAddress = "Scuba_Wizard@getalby.com";
+    const lightningAddress = 'Scuba_Wizard@getalby.com';
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Tip me in Bitcoin')),
+      appBar: AppBar(title: Text(AppTranslations.tr('Tip me in Bitcoin'))),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text(
-              "Merci pour votre soutien 🧡",
-              style: TextStyle(fontSize: 18),
+            Text(
+              AppTranslations.tr('Merci pour votre soutien '),
+              style: const TextStyle(fontSize: 18),
             ),
             const SizedBox(height: 20),
             Image.asset(
@@ -28,9 +31,9 @@ class DonationPage extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(
+                const UntranslatedText(
                   lightningAddress,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
                     color: Colors.black87,
@@ -42,12 +45,15 @@ class DonationPage extends StatelessWidget {
                     Clipboard.setData(
                       const ClipboardData(text: lightningAddress),
                     );
+
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
+                      SnackBar(
                         content: Text(
-                          "Adresse copiée dans le presse-papiers !",
+                          AppTranslations.tr(
+                            'Adresse copiée dans le presse-papiers !',
+                          ),
                         ),
-                        duration: Duration(seconds: 2),
+                        duration: const Duration(seconds: 2),
                       ),
                     );
                   },
@@ -55,9 +61,9 @@ class DonationPage extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            const Text(
-              "Scan pour envoyer un tip en Bitcoin",
-              style: TextStyle(fontSize: 14, color: Colors.grey),
+            Text(
+              AppTranslations.tr('Scan pour envoyer un tip en Bitcoin'),
+              style: const TextStyle(fontSize: 14, color: Colors.grey),
             ),
           ],
         ),

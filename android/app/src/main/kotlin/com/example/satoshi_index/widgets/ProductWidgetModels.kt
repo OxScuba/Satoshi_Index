@@ -37,6 +37,7 @@ data class WidgetProductSnapshot(
 
 data class WidgetDataSnapshot(
     val schemaVersion: Int,
+    val language: String,
     val currency: String,
     val showSats: Boolean,
     val updatedAt: Long,

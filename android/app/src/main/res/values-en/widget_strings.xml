@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="product_widget_name">Satoshi Index · Product</string>
+    <string name="product_widget_config_title">Configure widget</string>
+    <string name="product_widget_config_subtitle">Choose the item and the style that suits your wallpaper.</string>
+
+    <string name="product_widget_product_section">Displayed item</string>
+    <string name="product_widget_appearance_section">Appearance</string>
+
+    <string name="product_widget_appearance_classic">Classic · solid background</string>
+    <string name="product_widget_appearance_transparent_white">Transparent · white text</string>
+    <string name="product_widget_appearance_transparent_black">Transparent · black text</string>
+
+    <string name="product_widget_no_products">No product available.</string>
+    <string name="product_widget_add">Save widget</string>
+</resources>

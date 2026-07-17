@@ -2,7 +2,9 @@ package com.example.satoshi_index.widgets
 
 import android.app.Activity
 import android.appwidget.AppWidgetManager
+import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
@@ -10,8 +12,29 @@ import android.widget.RadioButton
 import android.widget.RadioGroup
 import android.widget.TextView
 import com.example.satoshi_index.R
+import java.util.Locale
 
 class ProductWidgetConfigureActivity : Activity() {
+    override fun attachBaseContext(newBase: Context) {
+        val language =
+            ProductWidgetRepository
+                .readSnapshot(newBase)
+                ?.language
+                ?.takeIf { it == "en" }
+                ?: "fr"
+
+        val configuration = Configuration(
+            newBase.resources.configuration,
+        )
+        configuration.setLocale(Locale(language))
+
+        super.attachBaseContext(
+            newBase.createConfigurationContext(
+                configuration,
+            ),
+        )
+    }
+
     private var appWidgetId =
         AppWidgetManager.INVALID_APPWIDGET_ID
 

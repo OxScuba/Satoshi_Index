@@ -1,7 +1,10 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide RichText, Text, TextSpan;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../l10n/app_translations.dart';
+import '../l10n/localized_widgets.dart';
 import '../models/app_currency.dart';
+import '../models/user_product.dart';
 import '../models/product.dart';
 import 'currency_selection_page.dart';
 import 'custom_prices_page.dart';
@@ -9,12 +12,14 @@ import 'donation_page.dart';
 import 'user_products_page.dart';
 
 class SettingsPage extends StatefulWidget {
-  final Function(bool) onThemeChanged;
+  final ValueChanged<bool> onThemeChanged;
+  final ValueChanged<String> onLanguageChanged;
   final List<Product> products;
 
   const SettingsPage({
     super.key,
     required this.onThemeChanged,
+    required this.onLanguageChanged,
     required this.products,
   });
 
@@ -42,7 +47,8 @@ class _SettingsPageState extends State<SettingsPage> {
     setState(() {
       isDarkMode = prefs.getBool('darkMode') ?? false;
       showSats = prefs.getBool('showSats') ?? false;
-      selectedLanguage = prefs.getString('language') ?? 'fr';
+      selectedLanguage =
+          prefs.getString('language') ?? AppTranslations.languageCode;
       selectedCurrency = appCurrencyFromCode(prefs.getString('currency'));
     });
   }
@@ -83,6 +89,18 @@ class _SettingsPageState extends State<SettingsPage> {
     await _updateSetting('currency', currency.code);
   }
 
+  Future<void> _changeLanguage(String value) async {
+    final normalized = value == 'en' ? 'en' : 'fr';
+
+    setState(() {
+      selectedLanguage = normalized;
+    });
+
+    AppTranslations.setLanguage(normalized);
+    await _updateSetting('language', normalized);
+    widget.onLanguageChanged(normalized);
+  }
+
   @override
   Widget build(BuildContext context) {
     final customizableCount =
@@ -114,7 +132,7 @@ class _SettingsPageState extends State<SettingsPage> {
             leading: const Icon(Icons.currency_exchange, color: Colors.orange),
             title: const Text('Devise d’affichage'),
             subtitle: Text(
-              '${selectedCurrency.label} '
+              '${selectedCurrency.localizedLabel} '
               '(${selectedCurrency.code.toUpperCase()})\n'
               'Concerne l’accueil, les outils et les widgets.',
             ),
@@ -161,7 +179,9 @@ class _SettingsPageState extends State<SettingsPage> {
           ListTile(
             leading: const Icon(Icons.add_shopping_cart, color: Colors.orange),
             title: const Text('Mes produits'),
-            subtitle: const Text('Ajoutez des produits personnels.'),
+            subtitle: const Text(
+              'Ajoutez jusqu’à ${UserProduct.slotCount} produits personnels.',
+            ),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
               Navigator.push(
@@ -185,9 +205,7 @@ class _SettingsPageState extends State<SettingsPage> {
               ],
               onChanged: (value) {
                 if (value == null) return;
-
-                setState(() => selectedLanguage = value);
-                _updateSetting('language', value);
+                _changeLanguage(value);
               },
             ),
           ),

@@ -109,6 +109,7 @@ class ProductWidgetProvider : AppWidgetProvider() {
                     appWidgetManager = appWidgetManager,
                     appWidgetId = appWidgetId,
                     sizeProfile = sizeProfile,
+                    snapshot = snapshot,
                 )
                 return
             }
@@ -173,25 +174,26 @@ class ProductWidgetProvider : AppWidgetProvider() {
             } else {
                 views.setTextViewText(
                     R.id.widget_product_bitcoin_price,
-                    "Actualisation nécessaire",
+                    WidgetTranslations.text(snapshot, "Actualisation nécessaire", "Refresh required"),
                 )
 
                 views.setTextViewText(
                     R.id.widget_product_fiat_price,
-                    "Touchez le widget",
+                    WidgetTranslations.text(snapshot, "Touchez le widget", "Tap the widget"),
                 )
             }
 
             val status = statusOverride ?: when {
-                loading -> "Actualisation…"
+                loading -> WidgetTranslations.text(snapshot, "Actualisation…", "Refreshing…")
 
                 snapshot.updatedAt <= 0L ->
-                    "En attente du premier cours"
+                    WidgetTranslations.text(snapshot, "En attente du premier cours", "Waiting for the first rate")
 
                 else ->
-                    "Mis à jour à ${
-                        formatUpdateTime(snapshot.updatedAt)
-                    }"
+                    WidgetTranslations.updatedAt(
+                        snapshot,
+                        formatUpdateTime(snapshot.updatedAt),
+                    )
             }
 
             views.setTextViewText(
@@ -250,6 +252,7 @@ class ProductWidgetProvider : AppWidgetProvider() {
             appWidgetManager: AppWidgetManager,
             appWidgetId: Int,
             sizeProfile: ProductWidgetSizeProfile,
+            snapshot: WidgetDataSnapshot,
         ) {
             views.setTextViewText(
                 R.id.widget_product_emoji,
@@ -257,19 +260,19 @@ class ProductWidgetProvider : AppWidgetProvider() {
             )
             views.setTextViewText(
                 R.id.widget_product_name,
-                "Produit supprimé",
+                WidgetTranslations.text(snapshot, "Produit supprimé", "Product deleted"),
             )
             views.setTextViewText(
                 R.id.widget_product_bitcoin_price,
-                "Touchez pour choisir",
+                WidgetTranslations.text(snapshot, "Touchez pour choisir", "Tap to choose"),
             )
             views.setTextViewText(
                 R.id.widget_product_fiat_price,
-                "un autre produit",
+                WidgetTranslations.text(snapshot, "un autre produit", "another product"),
             )
             views.setTextViewText(
                 R.id.widget_product_status,
-                "Configuration nécessaire",
+                WidgetTranslations.text(snapshot, "Configuration nécessaire", "Configuration required"),
             )
             views.setViewVisibility(
                 R.id.widget_product_status,
@@ -584,7 +587,6 @@ class ProductWidgetProvider : AppWidgetProvider() {
         } else {
             updateAllWidgets(
                 context = context,
-                statusOverride = "Actualisation…",
             )
         }
 

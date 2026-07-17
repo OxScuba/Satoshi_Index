@@ -1,5 +1,7 @@
 import 'dart:math';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide RichText, Text, TextSpan;
+
+import '../l10n/localized_widgets.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/product.dart';

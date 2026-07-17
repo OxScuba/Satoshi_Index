@@ -38,8 +38,7 @@ class UserProductService {
   static Future<void> saveSlots(List<UserProduct?> slots) async {
     if (slots.length != UserProduct.slotCount) {
       throw ArgumentError(
-        '${UserProduct.slotCount} emplacements de '
-        'produits personnels sont attendus.',
+        '${UserProduct.slotCount} emplacements de produits personnels sont attendus.',
       );
     }
 

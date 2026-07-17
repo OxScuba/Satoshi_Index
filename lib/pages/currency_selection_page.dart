@@ -1,4 +1,7 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide RichText, Text, TextSpan;
+
+import '../l10n/app_translations.dart';
+import '../l10n/localized_widgets.dart';
 
 import '../models/app_currency.dart';
 
@@ -31,7 +34,7 @@ class _CurrencySelectionPageState extends State<CurrencySelectionPage> {
 
     return AppCurrency.values
         .where((currency) {
-          return currency.label.toLowerCase().contains(query) ||
+          return currency.localizedLabel.toLowerCase().contains(query) ||
               currency.code.toLowerCase().contains(query) ||
               currency.symbol.toLowerCase().contains(query);
         })
@@ -60,13 +63,13 @@ class _CurrencySelectionPageState extends State<CurrencySelectionPage> {
                 });
               },
               decoration: InputDecoration(
-                hintText: 'Rechercher une devise',
+                hintText: tr('Rechercher une devise'),
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon:
                     _query.isEmpty
                         ? null
                         : IconButton(
-                          tooltip: 'Effacer',
+                          tooltip: tr('Effacer'),
                           onPressed: () {
                             _searchController.clear();
 
@@ -106,7 +109,7 @@ class _CurrencySelectionPageState extends State<CurrencySelectionPage> {
                               ),
                             ),
                           ),
-                          title: Text(currency.label),
+                          title: Text(currency.localizedLabel),
                           subtitle: Text(currency.code.toUpperCase()),
                           trailing:
                               selected

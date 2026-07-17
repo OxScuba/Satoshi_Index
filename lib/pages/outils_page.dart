@@ -1,5 +1,7 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide RichText, Text, TextSpan;
 
+import '../l10n/app_translations.dart';
+import '../l10n/localized_widgets.dart';
 import '../models/app_currency.dart';
 import '../models/market_prices.dart';
 import '../models/product.dart';
@@ -21,7 +23,13 @@ class _ComparisonItem {
     : officialProduct = null,
       userProduct = product;
 
-  String get name => officialProduct?.name ?? userProduct!.name;
+  String get name =>
+      officialProduct == null
+          ? userProduct!.name
+          : AppTranslations.productName(
+            officialProduct!.id,
+            officialProduct!.name,
+          );
   String get emoji => officialProduct?.emoji ?? userProduct!.emoji;
   bool get isUserProduct => userProduct != null;
 }
@@ -487,12 +495,20 @@ class _OutilsPageState extends State<OutilsPage> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  TextSpan(
-                    text:
-                        ' × ${selectedItem.emoji} '
-                        '${selectedItem.name}',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
+                  if (selectedItem.isUserProduct)
+                    UntranslatedTextSpan(
+                      text:
+                          ' × ${selectedItem.emoji} '
+                          '${selectedItem.name}',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    )
+                  else
+                    TextSpan(
+                      text:
+                          ' × ${selectedItem.emoji} '
+                          '${selectedItem.name}',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
                 ],
               ),
             ),
@@ -632,25 +648,25 @@ class _OutilsPageState extends State<OutilsPage> {
               const SizedBox(height: 20),
               _buildField(
                 unit: _ConversionUnit.sats,
-                label: 'Satoshis',
+                label: tr('Satoshis'),
                 suffix: 'sats',
                 icon: Icons.bolt,
               ),
               _buildField(
                 unit: _ConversionUnit.btc,
-                label: 'Bitcoin',
+                label: tr('Bitcoin'),
                 suffix: 'BTC',
                 icon: Icons.currency_bitcoin,
               ),
               _buildField(
                 unit: _ConversionUnit.eur,
-                label: 'Euros',
+                label: tr('Euros'),
                 suffix: '€',
                 icon: Icons.euro,
               ),
               _buildField(
                 unit: _ConversionUnit.secondary,
-                label: secondary.label,
+                label: secondary.localizedLabel,
                 suffix: secondary.symbol,
                 icon: Icons.currency_exchange,
               ),
@@ -688,11 +704,16 @@ class _OutilsPageState extends State<OutilsPage> {
                               .map(
                                 (item) => DropdownMenuItem<_ComparisonItem>(
                                   value: item,
-                                  child: Text(
-                                    '${item.emoji} ${item.name}'
-                                    '${item.isUserProduct ? ' · personnel' : ''}',
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
+                                  child:
+                                      item.isUserProduct
+                                          ? UntranslatedText(
+                                            '${item.emoji} ${item.name} · ${tr('personnel')}',
+                                            overflow: TextOverflow.ellipsis,
+                                          )
+                                          : Text(
+                                            '${item.emoji} ${item.name}',
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
                                 ),
                               )
                               .toList(),

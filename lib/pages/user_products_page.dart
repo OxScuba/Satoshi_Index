@@ -1,6 +1,8 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide RichText, Text, TextSpan;
 import 'package:flutter/services.dart';
 
+import '../l10n/app_translations.dart';
+import '../l10n/localized_widgets.dart';
 import '../models/app_currency.dart';
 import '../models/user_product.dart';
 import '../services/user_product_service.dart';
@@ -214,7 +216,7 @@ class _UserProductsPageState extends State<UserProductsPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  UntranslatedText(
                     product.name,
                     style: const TextStyle(
                       fontSize: 17,
@@ -238,14 +240,14 @@ class _UserProductsPageState extends State<UserProductsPage> {
               ),
             ),
             IconButton(
-              tooltip: 'Modifier',
+              tooltip: tr('Modifier'),
               onPressed: () {
                 _editSlot(slotIndex);
               },
               icon: const Icon(Icons.edit_outlined),
             ),
             IconButton(
-              tooltip: 'Supprimer',
+              tooltip: tr('Supprimer'),
               onPressed: () {
                 _deleteSlot(slotIndex);
               },
@@ -275,10 +277,10 @@ class _UserProductsPageState extends State<UserProductsPage> {
                   Card(
                     elevation: 0,
                     color: Colors.orange.withValues(alpha: 0.10),
-                    child: const Padding(
-                      padding: EdgeInsets.all(16),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
                       child: Text(
-                        'Créez jusqu’à trois produits personnels. '
+                        'Créez jusqu’à ${UserProduct.slotCount} produits personnels. '
                         'Ils apparaîtront en bas de l’accueil, dans la '
                         'page Outils et dans les widgets Android.\n\n'
                         'Le prix est conservé dans sa devise d’origine '
@@ -423,17 +425,17 @@ class _UserProductEditorPageState extends State<_UserProductEditorPage> {
               controller: _nameController,
               maxLength: 30,
               textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(
-                labelText: 'Nom du produit',
-                hintText: 'Exemple : Croissant',
-                prefixIcon: Icon(Icons.edit_outlined),
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: tr('Nom du produit'),
+                hintText: tr('Exemple : Croissant'),
+                prefixIcon: const Icon(Icons.edit_outlined),
+                border: const OutlineInputBorder(),
               ),
               validator: (value) {
                 final name = value?.trim() ?? '';
 
                 if (name.isEmpty) {
-                  return 'Le nom est obligatoire.';
+                  return tr('Le nom est obligatoire.');
                 }
 
                 return null;
@@ -443,15 +445,15 @@ class _UserProductEditorPageState extends State<_UserProductEditorPage> {
             TextFormField(
               controller: _emojiController,
               maxLength: 16,
-              decoration: const InputDecoration(
-                labelText: 'Emoji ou symbole',
-                hintText: 'Exemple : 🥐',
-                prefixIcon: Icon(Icons.emoji_emotions_outlined),
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: tr('Emoji ou symbole'),
+                hintText: tr('Exemple : 🥐'),
+                prefixIcon: const Icon(Icons.emoji_emotions_outlined),
+                border: const OutlineInputBorder(),
               ),
               validator: (value) {
                 if ((value?.trim() ?? '').isEmpty) {
-                  return 'Ajoutez un emoji ou un symbole.';
+                  return tr('Ajoutez un emoji ou un symbole.');
                 }
 
                 return null;
@@ -467,15 +469,15 @@ class _UserProductEditorPageState extends State<_UserProductEditorPage> {
                 FilteringTextInputFormatter.allow(RegExp(r'[0-9.,\s]')),
               ],
               decoration: InputDecoration(
-                labelText: 'Prix habituel',
-                hintText: 'Exemple : 1,60',
+                labelText: tr('Prix habituel'),
+                hintText: tr('Exemple : 1,60'),
                 prefixIcon: const Icon(Icons.payments_outlined),
                 suffixText: _currency.symbol,
                 border: const OutlineInputBorder(),
               ),
               validator: (value) {
                 if (_parsePrice(value ?? '') == null) {
-                  return 'Entrez un prix supérieur à zéro.';
+                  return tr('Entrez un prix supérieur à zéro.');
                 }
 
                 return null;
@@ -490,7 +492,7 @@ class _UserProductEditorPageState extends State<_UserProductEditorPage> {
               leading: const Icon(Icons.currency_exchange),
               title: const Text('Devise du prix'),
               subtitle: Text(
-                '${_currency.label} '
+                '${_currency.localizedLabel} '
                 '(${_currency.code.toUpperCase()})',
               ),
               trailing: Row(

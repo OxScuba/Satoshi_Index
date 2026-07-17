@@ -24,20 +24,17 @@ void main() {
   const noodles = UserProduct(
     id: 'user_product_1',
     name: 'Nouilles',
-    emoji: '🍜',
+    emoji: '',
     price: 48,
     currency: AppCurrency.hkd,
   );
 
   test('conserve des identifiants fixes par emplacement', () {
-    expect(UserProduct.slotCount, 5);
-
+    expect(UserProduct.slotCount, 3);
     expect(UserProduct.idForSlot(0), 'user_product_1');
     expect(UserProduct.idForSlot(1), 'user_product_2');
     expect(UserProduct.idForSlot(2), 'user_product_3');
-
     expect(noodles.slotIndex, 0);
-
     expect(() => UserProduct.idForSlot(3), throwsRangeError);
   });
 

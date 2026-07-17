@@ -1,6 +1,8 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide RichText, Text, TextSpan;
 import 'package:flutter/services.dart';
 
+import '../l10n/app_translations.dart';
+import '../l10n/localized_widgets.dart';
 import '../models/product.dart';
 import '../services/custom_price_service.dart';
 import '../services/product_price_resolver.dart';
@@ -89,7 +91,7 @@ class _CustomPricesPageState extends State<CustomPricesPage> {
     }
 
     if (_parsePrice(value) == null) {
-      return 'Entre un prix supérieur à zéro.';
+      return tr('Entre un prix supérieur à zéro.');
     }
 
     return null;
@@ -231,14 +233,14 @@ class _CustomPricesPageState extends State<CustomPricesPage> {
                     ],
                     validator: _validatePrice,
                     decoration: InputDecoration(
-                      labelText: 'Votre prix habituel',
-                      hintText: 'Laisser vide pour la référence',
+                      labelText: tr('Votre prix habituel'),
+                      hintText: tr('Laisser vide pour la référence'),
                       suffixText: '€',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                       suffixIcon: IconButton(
-                        tooltip: 'Utiliser le prix de référence',
+                        tooltip: tr('Utiliser le prix de référence'),
                         onPressed: () {
                           controller.clear();
                           setState(() {});
@@ -264,7 +266,7 @@ class _CustomPricesPageState extends State<CustomPricesPage> {
         backgroundColor: Colors.orange,
         actions: [
           IconButton(
-            tooltip: 'Tout réinitialiser',
+            tooltip: tr('Tout réinitialiser'),
             onPressed: _isLoading || _isSaving ? null : _resetAllPrices,
             icon: const Icon(Icons.delete_sweep_outlined),
           ),

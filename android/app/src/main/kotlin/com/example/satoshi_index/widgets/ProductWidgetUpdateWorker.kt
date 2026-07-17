@@ -24,9 +24,17 @@ class ProductWidgetUpdateWorker(
             Result.success()
         } catch (error: Exception) {
             Log.w(TAG, "Actualisation widget impossible", error)
+            val snapshot =
+                ProductWidgetRepository.readSnapshotOrFallback(
+                    applicationContext,
+                )
             ProductWidgetProvider.updateAllWidgets(
                 applicationContext,
-                statusOverride = "Hors ligne",
+                statusOverride = WidgetTranslations.text(
+                    snapshot,
+                    "Hors ligne",
+                    "Offline",
+                ),
             )
             Result.retry()
         }

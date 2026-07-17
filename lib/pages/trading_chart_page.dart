@@ -1,4 +1,6 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide RichText, Text, TextSpan;
+
+import '../l10n/localized_widgets.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 class TradingChartPage extends StatefulWidget {

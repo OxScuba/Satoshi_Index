@@ -1,12 +1,16 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide RichText, Text, TextSpan;
 import 'package:url_launcher/url_launcher.dart';
+
+import '../l10n/app_translations.dart';
+import '../l10n/localized_widgets.dart';
 import 'whitepaper_page.dart';
 
 class SatoshiPage extends StatelessWidget {
   const SatoshiPage({super.key});
 
-  void _launchPlanB() async {
+  Future<void> _launchPlanB() async {
     final url = Uri.parse('https://planb.network');
+
     if (await canLaunchUrl(url)) {
       await launchUrl(url, mode: LaunchMode.externalApplication);
     }
@@ -14,9 +18,15 @@ class SatoshiPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const explanation =
+        "Le satoshi (ou sat) est la plus petite unité de Bitcoin, "
+        "comme le centime pour l’euro.\n"
+        "Comprendre cette échelle permet de mieux saisir les prix en "
+        "satoshis affichés dans l’application.";
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Satoshi to Bitcoin'),
+        title: Text(AppTranslations.tr('Satoshi to Bitcoin')),
         backgroundColor: Colors.orange,
       ),
       body: Padding(
@@ -25,9 +35,9 @@ class SatoshiPage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             const SizedBox(height: 12),
-            const Text(
-              "Comprendre le satoshi",
-              style: TextStyle(
+            Text(
+              AppTranslations.tr('Comprendre le satoshi'),
+              style: const TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
                 color: Colors.orange,
@@ -35,11 +45,9 @@ class SatoshiPage extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
-            const Text(
-              "Le satoshi (ou sat) est la plus petite unité de Bitcoin, "
-              "comme le centime pour l’euro. Comprendre cette échelle permet de mieux "
-              "saisir les prix en satoshis affichés dans l’application.",
-              style: TextStyle(fontSize: 16),
+            Text(
+              AppTranslations.tr(explanation),
+              style: const TextStyle(fontSize: 16),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
@@ -49,10 +57,13 @@ class SatoshiPage extends StatelessWidget {
               height: 300,
             ),
             const SizedBox(height: 18),
-            const Text(
-              "Pour apprendre sur la meilleure plateforme d'éducation gratuite sur Bitcoin c'est sur planb.network",
+            Text(
+              AppTranslations.tr(
+                "Pour apprendre sur la meilleure plateforme d'éducation "
+                "gratuite sur Bitcoin c'est sur planb.network",
+              ),
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 15, color: Colors.black87),
+              style: const TextStyle(fontSize: 15, color: Colors.black87),
             ),
             const SizedBox(height: 8),
             InkWell(
@@ -67,11 +78,13 @@ class SatoshiPage extends StatelessWidget {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const WhitepaperPage()),
+                  MaterialPageRoute<void>(
+                    builder: (_) => const WhitepaperPage(),
+                  ),
                 );
               },
               icon: const Icon(Icons.picture_as_pdf),
-              label: const Text("Lire le Whitepaper de Bitcoin"),
+              label: Text(AppTranslations.tr('Lire le Whitepaper de Bitcoin')),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.orange,
                 padding: const EdgeInsets.symmetric(

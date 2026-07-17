@@ -1,3 +1,5 @@
+import '../l10n/app_translations.dart';
+
 enum AppCurrency { eur, usd, gbp, chf, cad, aud, jpy, cny, hkd, sgd, rub, ils }
 
 extension AppCurrencyExtension on AppCurrency {
@@ -60,6 +62,8 @@ extension AppCurrencyExtension on AppCurrency {
         return 'Nouveau shekel israélien';
     }
   }
+
+  String get localizedLabel => AppTranslations.tr(label);
 
   int get fractionDigits {
     switch (this) {

@@ -97,7 +97,7 @@ object ProductWidgetRepository {
             fetchMarketPrices(requestedCurrencies)
 
         val refreshed = oldSnapshot.copy(
-            schemaVersion = 3,
+            schemaVersion = 4,
             currency = WidgetCurrencyCatalog.normalize(
                 oldSnapshot.currency,
             ),
@@ -365,6 +365,9 @@ object ProductWidgetRepository {
         return WidgetDataSnapshot(
             schemaVersion =
                 root.optInt("schemaVersion", 1),
+            language = normalizeLanguage(
+                root.optString("language", "fr"),
+            ),
             currency = WidgetCurrencyCatalog.normalize(
                 root.optString(
                     "currency",
@@ -436,7 +439,8 @@ object ProductWidgetRepository {
         snapshot: WidgetDataSnapshot,
     ): JSONObject {
         return JSONObject().apply {
-            put("schemaVersion", 3)
+            put("schemaVersion", 4)
+            put("language", normalizeLanguage(snapshot.language))
             put(
                 "currency",
                 WidgetCurrencyCatalog.normalize(
@@ -509,6 +513,10 @@ object ProductWidgetRepository {
                 },
             )
         }
+    }
+
+    private fun normalizeLanguage(value: String): String {
+        return if (value.lowercase() == "en") "en" else "fr"
     }
 
     private fun priceMapToJson(

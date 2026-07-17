@@ -84,7 +84,8 @@ object ProductWidgetCatalog {
 
     fun fallbackSnapshot(): WidgetDataSnapshot {
         return WidgetDataSnapshot(
-            schemaVersion = 2,
+            schemaVersion = 4,
+            language = "fr",
             currency = "eur",
             showSats = false,
             updatedAt = 0L,
