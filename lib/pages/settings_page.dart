@@ -47,8 +47,9 @@ class _SettingsPageState extends State<SettingsPage> {
     setState(() {
       isDarkMode = prefs.getBool('darkMode') ?? false;
       showSats = prefs.getBool('showSats') ?? false;
-      selectedLanguage =
-          prefs.getString('language') ?? AppTranslations.languageCode;
+      selectedLanguage = AppTranslations.normalizeLanguage(
+        prefs.getString('language') ?? AppTranslations.languageCode,
+      );
       selectedCurrency = appCurrencyFromCode(prefs.getString('currency'));
     });
   }
@@ -90,7 +91,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _changeLanguage(String value) async {
-    final normalized = value == 'en' ? 'en' : 'fr';
+    final normalized = AppTranslations.normalizeLanguage(value);
 
     setState(() {
       selectedLanguage = normalized;
@@ -202,6 +203,7 @@ class _SettingsPageState extends State<SettingsPage> {
               items: const [
                 DropdownMenuItem(value: 'fr', child: Text('Français')),
                 DropdownMenuItem(value: 'en', child: Text('English')),
+                DropdownMenuItem(value: 'es', child: Text('Español')),
               ],
               onChanged: (value) {
                 if (value == null) return;

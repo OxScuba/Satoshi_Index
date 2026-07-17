@@ -516,7 +516,11 @@ object ProductWidgetRepository {
     }
 
     private fun normalizeLanguage(value: String): String {
-        return if (value.lowercase() == "en") "en" else "fr"
+        return when (value.lowercase()) {
+            "en" -> "en"
+            "es" -> "es"
+            else -> "fr"
+        }
     }
 
     private fun priceMapToJson(

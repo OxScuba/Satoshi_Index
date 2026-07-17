@@ -20,8 +20,12 @@ class ProductWidgetConfigureActivity : Activity() {
             ProductWidgetRepository
                 .readSnapshot(newBase)
                 ?.language
-                ?.takeIf { it == "en" }
-                ?: "fr"
+                ?.takeIf { it == "en" || it == "es" }
+                ?: when (Locale.getDefault().language) {
+                    "en" -> "en"
+                    "es" -> "es"
+                    else -> "fr"
+                }
 
         val configuration = Configuration(
             newBase.resources.configuration,

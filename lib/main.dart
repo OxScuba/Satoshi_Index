@@ -33,10 +33,9 @@ void main() async {
   final savedLanguage = prefs.getString('language');
   final systemLanguage =
       WidgetsBinding.instance.platformDispatcher.locale.languageCode;
-  final languageCode =
-      savedLanguage == 'en' || savedLanguage == 'fr'
-          ? savedLanguage!
-          : (systemLanguage == 'en' ? 'en' : 'fr');
+  final languageCode = AppTranslations.normalizeLanguage(
+    savedLanguage ?? systemLanguage,
+  );
 
   AppTranslations.setLanguage(languageCode);
 
@@ -77,7 +76,7 @@ class _SatoshiIndexAppState extends State<SatoshiIndexApp> {
   }
 
   void updateLanguage(String value) {
-    final normalized = value == 'en' ? 'en' : 'fr';
+    final normalized = AppTranslations.normalizeLanguage(value);
     AppTranslations.setLanguage(normalized);
 
     setState(() {
@@ -91,7 +90,7 @@ class _SatoshiIndexAppState extends State<SatoshiIndexApp> {
       title: 'Satoshi Index',
       debugShowCheckedModeBanner: false,
       locale: Locale(languageCode),
-      supportedLocales: const [Locale('fr'), Locale('en')],
+      supportedLocales: const [Locale('fr'), Locale('en'), Locale('es')],
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,

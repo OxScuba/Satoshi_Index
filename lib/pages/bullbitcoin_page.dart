@@ -16,7 +16,9 @@ class BullBitcoinPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final publicUrl = Uri.parse(
-      AppTranslations.isEnglish
+      AppTranslations.isSpanish
+          ? 'https://www.bullbitcoin.com/es'
+          : AppTranslations.isEnglish
           ? 'https://www.bullbitcoin.com/'
           : 'https://www.bullbitcoin.com/fr',
     );

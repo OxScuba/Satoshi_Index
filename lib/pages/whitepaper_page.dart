@@ -12,8 +12,33 @@ class WhitepaperPage extends StatelessWidget {
   static const _frenchAsset =
       'lib/assets/pdf/LivreBlanc_Verticale_31x21po_Blanc.pdf';
   static const _englishAsset = 'lib/assets/pdf/bitcoin-whitepaper-en.pdf';
+  static const _spanishAsset = 'lib/assets/pdf/bitcoin-whitepaper-es.pdf';
 
   const WhitepaperPage({super.key});
+
+  static String get _selectedAsset {
+    if (AppTranslations.isSpanish) {
+      return _spanishAsset;
+    }
+
+    if (AppTranslations.isEnglish) {
+      return _englishAsset;
+    }
+
+    return _frenchAsset;
+  }
+
+  static String get _downloadFileName {
+    if (AppTranslations.isSpanish) {
+      return 'Libro_Blanco_Bitcoin.pdf';
+    }
+
+    if (AppTranslations.isEnglish) {
+      return 'Bitcoin_White_Paper.pdf';
+    }
+
+    return 'LivreBlanc_Bitcoin.pdf';
+  }
 
   Future<void> _downloadPdf(BuildContext context) async {
     if (kIsWeb) {
@@ -31,13 +56,9 @@ class WhitepaperPage extends StatelessWidget {
         throw StateError('Dossier de téléchargement indisponible');
       }
 
-      final file = File(
-        '${directory.path}/'
-        '${AppTranslations.isEnglish ? 'Bitcoin_White_Paper.pdf' : 'LivreBlanc_Bitcoin.pdf'}',
-      );
+      final file = File('${directory.path}/$_downloadFileName');
 
-      final assetPath =
-          AppTranslations.isEnglish ? _englishAsset : _frenchAsset;
+      final assetPath = _selectedAsset;
       final bytes = await DefaultAssetBundle.of(context).load(assetPath);
       await file.writeAsBytes(bytes.buffer.asUint8List(), flush: true);
 
@@ -72,9 +93,7 @@ class WhitepaperPage extends StatelessWidget {
           ),
         ],
       ),
-      body: SfPdfViewer.asset(
-        AppTranslations.isEnglish ? _englishAsset : _frenchAsset,
-      ),
+      body: SfPdfViewer.asset(_selectedAsset),
     );
   }
 }
