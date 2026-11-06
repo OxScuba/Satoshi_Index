@@ -411,14 +411,18 @@ final List<PriceEntry> goldPriceData = [
     btcPrice: 65494.53,
     priceSats: 204261.33,
   ),
-  // Provisoire : l'INSEE ne publiait encore que les valeurs d'avril
-  // et mai 2026. Juin est complété avec la moyenne mensuelle
-  // de la Pink Sheet de la Banque mondiale.
   PriceEntry(
     year: 2026,
     quarter: 2,
-    priceEuro: 125.33,
+    priceEuro: 124.71,
     btcPrice: 61591.58,
-    priceSats: 203485.61,
+    priceSats: 202478.98,
+  ),
+  PriceEntry(
+    year: 2026,
+    quarter: 3,
+    priceEuro: 119.33,
+    btcPrice: 61595.16,
+    priceSats: 193732.75,
   ),
 ];

@@ -320,4 +320,11 @@ final List<PriceEntry> ethereumPriceData = [
     btcPrice: 61591.58,
     priceSats: 2725567.36,
   ),
+  PriceEntry(
+    year: 2026,
+    quarter: 3,
+    priceEuro: 2035.34,
+    btcPrice: 61595.16,
+    priceSats: 3304383.01,
+  ),
 ];

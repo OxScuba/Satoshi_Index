@@ -396,8 +396,16 @@ final List<PriceEntry> immobilierPriceData = [
   PriceEntry(
     year: 2026,
     quarter: 1,
-    priceEuro: 2908.50,
+    priceEuro: 2911.80,
     btcPrice: 65494.53,
-    priceSats: 4440829,
+    priceSats: 4445867,
+  ),
+  // T2 provisoire : indice INSEE 125,5.
+  PriceEntry(
+    year: 2026,
+    quarter: 2,
+    priceEuro: 2886.50,
+    btcPrice: 61591.58,
+    priceSats: 4686517,
   ),
 ];
